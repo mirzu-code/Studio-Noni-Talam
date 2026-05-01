@@ -1,0 +1,208 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+const statusBadge = (status) => {
+  const styles = {
+    approved:  { background: '#ECFDF5', color: '#065F46', border: '1px solid #10B981' },
+    cancelled: { background: '#FEF2F2', color: '#991B1B', border: '1px solid #EF4444' },
+  };
+  const s = styles[status] || styles.approved;
+  return (
+    <span style={{ ...s, padding: '2px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase' }}>
+      {status}
+    </span>
+  );
+};
+
+const Admin = () => {
+  const navigate = useNavigate();
+  const [testimonials, setTestimonials] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [activeTab, setActiveTab] = useState('bookings');
+
+  useEffect(() => {
+    const loadedTestimonials = JSON.parse(localStorage.getItem('studio_testimonials')) || [];
+    setTestimonials(loadedTestimonials);
+    const loadedBookings = JSON.parse(localStorage.getItem('studio_bookings')) || [];
+    setBookings(loadedBookings);
+  }, []);
+
+  // ─── Testimonial Actions ───────────────────────────────────────────────────
+  const handleApproveTestimonial = (id) => {
+    const updated = testimonials.map(t => t.id === id ? { ...t, status: 'approved' } : t);
+    setTestimonials(updated);
+    localStorage.setItem('studio_testimonials', JSON.stringify(updated));
+  };
+  const handleDeleteTestimonial = (id) => {
+    const updated = testimonials.filter(t => t.id !== id);
+    setTestimonials(updated);
+    localStorage.setItem('studio_testimonials', JSON.stringify(updated));
+  };
+
+  // ─── Booking Actions ───────────────────────────────────────────────────────
+  const updateBookingStatus = (orderId, newStatus) => {
+    const updated = bookings.map(b => b.orderId === orderId ? { ...b, status: newStatus } : b);
+    setBookings(updated);
+    localStorage.setItem('studio_bookings', JSON.stringify(updated));
+  };
+  const deleteBooking = (orderId) => {
+    const updated = bookings.filter(b => b.orderId !== orderId);
+    setBookings(updated);
+    localStorage.setItem('studio_bookings', JSON.stringify(updated));
+  };
+
+  const pendingTestimonials  = testimonials.filter(t => t.status === 'pending');
+  const approvedTestimonials = testimonials.filter(t => t.status === 'approved');
+  const approvedBookings     = bookings.filter(b => b.status === 'approved');
+  const cancelledBookings    = bookings.filter(b => b.status === 'cancelled');
+
+  const tabStyle = (tab) => ({
+    padding: '0.6rem 1.5rem',
+    border: 'none',
+    borderBottom: activeTab === tab ? '3px solid #047857' : '3px solid transparent',
+    background: 'none',
+    fontWeight: activeTab === tab ? '700' : '400',
+    color: activeTab === tab ? '#047857' : '#64748b',
+    cursor: 'pointer',
+    fontSize: '1rem',
+  });
+
+  return (
+    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '3rem 2rem', fontFamily: 'sans-serif', minHeight: '100vh', background: '#F8FAFC' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <div>
+          <h1 style={{ color: '#0F172A', fontFamily: '"Playfair Display", serif', margin: 0 }}>Admin Dashboard</h1>
+          <p style={{ color: '#64748b', margin: '4px 0 0' }}>Studio Noni Talam Management Panel</p>
+        </div>
+        <button onClick={() => navigate('/')} style={{ padding: '0.6rem 1.2rem', background: '#0F172A', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+          ← Back to Site
+        </button>
+      </div>
+
+      {/* Stats Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+        {[
+          { label: 'Total Bookings', value: bookings.length,       color: '#0F172A' },
+          { label: 'Confirmed',      value: approvedBookings.length,  color: '#047857' },
+          { label: 'Cancelled',      value: cancelledBookings.length, color: '#DC2626' },
+        ].map(s => (
+          <div key={s.label} style={{ background: 'white', borderRadius: '8px', padding: '1.2rem', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+            <div style={{ fontSize: '2rem', fontWeight: '800', color: s.color }}>{s.value}</div>
+            <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <div style={{ background: 'white', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid #E2E8F0', padding: '0 1rem' }}>
+          <button style={tabStyle('bookings')} onClick={() => setActiveTab('bookings')}>
+            Bookings
+          </button>
+          <button style={tabStyle('testimonials')} onClick={() => setActiveTab('testimonials')}>
+            Testimonials {pendingTestimonials.length > 0 && <span style={{ background: '#EF4444', color: 'white', borderRadius: '50%', padding: '1px 6px', fontSize: '0.7rem', marginLeft: '6px' }}>{pendingTestimonials.length}</span>}
+          </button>
+        </div>
+
+        <div style={{ padding: '2rem' }}>
+
+          {/* ── BOOKINGS TAB ── */}
+          {activeTab === 'bookings' && (
+            <div>
+              {bookings.length === 0 ? (
+                <p style={{ color: '#64748b', textAlign: 'center', padding: '2rem 0' }}>No bookings yet.</p>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                    <thead>
+                      <tr style={{ background: '#F1F5F9', textAlign: 'left' }}>
+                        <th style={{ padding: '0.8rem', borderBottom: '2px solid #CBD5E1' }}>Order ID</th>
+                        <th style={{ padding: '0.8rem', borderBottom: '2px solid #CBD5E1' }}>Customer</th>
+                        <th style={{ padding: '0.8rem', borderBottom: '2px solid #CBD5E1' }}>Session</th>
+                        <th style={{ padding: '0.8rem', borderBottom: '2px solid #CBD5E1' }}>Package</th>
+                        <th style={{ padding: '0.8rem', borderBottom: '2px solid #CBD5E1' }}>Total</th>
+                        <th style={{ padding: '0.8rem', borderBottom: '2px solid #CBD5E1' }}>Status</th>
+                        <th style={{ padding: '0.8rem', borderBottom: '2px solid #CBD5E1' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bookings.map((b) => (
+                        <tr key={b.orderId} style={{ borderBottom: '1px solid #E2E8F0' }}>
+                          <td style={{ padding: '0.8rem', fontWeight: 'bold', fontSize: '0.8rem', color: '#64748b' }}>{b.orderId}</td>
+                          <td style={{ padding: '0.8rem' }}>
+                            <div style={{ fontWeight: 'bold' }}>{b.customerName}</div>
+                            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{b.customerPhone}</div>
+                          </td>
+                          <td style={{ padding: '0.8rem' }}>
+                            <div style={{ fontWeight: 'bold' }}>{b.bookingDate}</div>
+                            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{b.bookingTime}</div>
+                          </td>
+                          <td style={{ padding: '0.8rem' }}>{b.package?.title} ({b.package?.pax} pax)</td>
+                          <td style={{ padding: '0.8rem', fontWeight: 'bold', color: '#047857' }}>RM {b.total?.toFixed(2)}</td>
+                          <td style={{ padding: '0.8rem' }}>{statusBadge(b.status || 'approved')}</td>
+                          <td style={{ padding: '0.8rem' }}>
+                            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                              {b.status !== 'cancelled' ? (
+                                <button onClick={() => updateBookingStatus(b.orderId, 'cancelled')}
+                                  style={{ background: '#EF4444', color: 'white', border: 'none', padding: '0.3rem 0.7rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                                  ✗ Cancel Order
+                                </button>
+                              ) : (
+                                <button onClick={() => updateBookingStatus(b.orderId, 'approved')}
+                                  style={{ background: '#10B981', color: 'white', border: 'none', padding: '0.3rem 0.7rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                                  ↩ Restore
+                                </button>
+                              )}
+                              <button onClick={() => deleteBooking(b.orderId)}
+                                style={{ background: '#94A3B8', color: 'white', border: 'none', padding: '0.3rem 0.7rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}>
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── TESTIMONIALS TAB ── */}
+          {activeTab === 'testimonials' && (
+            <div>
+              <h3 style={{ color: '#D97706', marginBottom: '1rem' }}>Pending ({pendingTestimonials.length})</h3>
+              {pendingTestimonials.length === 0 ? <p style={{ color: '#64748b' }}>No pending testimonials.</p> : null}
+              <div style={{ display: 'grid', gap: '1rem', marginBottom: '2rem' }}>
+                {pendingTestimonials.map(t => (
+                  <div key={t.id} style={{ background: '#FFFBEB', padding: '1rem', borderLeft: '4px solid #F59E0B', borderRadius: '4px' }}>
+                    <p><strong>{t.author}</strong> — {t.date}</p>
+                    <p style={{ margin: '0.5rem 0', fontStyle: 'italic' }}>"{t.text}"</p>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.8rem' }}>
+                      <button onClick={() => handleApproveTestimonial(t.id)} style={{ background: '#10B981', color: 'white', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>✓ Approve</button>
+                      <button onClick={() => handleDeleteTestimonial(t.id)} style={{ background: '#EF4444', color: 'white', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '4px', cursor: 'pointer' }}>✗ Reject</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <h3 style={{ color: '#047857', marginBottom: '1rem', borderTop: '1px solid #E2E8F0', paddingTop: '1.5rem' }}>Approved ({approvedTestimonials.length})</h3>
+              <div style={{ display: 'grid', gap: '1rem' }}>
+                {approvedTestimonials.map(t => (
+                  <div key={t.id} style={{ background: '#F8FAFC', padding: '1rem', borderLeft: '4px solid #10B981', borderRadius: '4px' }}>
+                    <p><strong>{t.author}</strong> — {t.date}</p>
+                    <p style={{ margin: '0.5rem 0', fontStyle: 'italic' }}>"{t.text}"</p>
+                    <button onClick={() => handleDeleteTestimonial(t.id)} style={{ background: '#EF4444', color: 'white', border: 'none', padding: '0.3rem 0.7rem', borderRadius: '4px', cursor: 'pointer', marginTop: '0.5rem' }}>Delete</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Admin;
