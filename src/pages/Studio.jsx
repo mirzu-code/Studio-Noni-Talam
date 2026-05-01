@@ -127,7 +127,13 @@ const Studio = () => {
 
       <div className="studio-container animate-fade-in">
         <form onSubmit={handleProceedToPayment}>
-          <h2 className="studio-section-title">Select Your Package</h2>
+          <h2 
+            className="studio-section-title" 
+            onDoubleClick={() => navigate('/admin')}
+            style={{ cursor: 'pointer' }}
+          >
+            Select Your Package
+          </h2>
           <div className="packages-grid">
             {packages.map((pkg) => (
               <div
