@@ -67,17 +67,20 @@ const Checkout = () => {
     setIsProcessing(true);
     const orderId = `STD-${Math.floor(Math.random() * 1000000)}`;
 
+    // Map booking data to Supabase table columns (avoid nested objects)
     const newBooking = {
-      orderId,
-      date: new Date().toLocaleString(),
-      package: pack,
-      bookingDate,
-      bookingTime,
-      customerName,
-      customerPhone,
-      paymentMethod: paymentMethod.toUpperCase(),
-      total: pack.price,
-      status: 'approved', // Auto-approved — no waiting needed
+      order_id: orderId,
+      created_at: new Date().toISOString(),
+      package_title: pack.title,
+      package_pax: pack.pax,
+      package_price: pack.price,
+      booking_date: bookingDate,
+      booking_time: bookingTime,
+      customer_name: customerName,
+      customer_phone: customerPhone,
+      payment_method: paymentMethod.toUpperCase(),
+      total_amount: pack.price,
+      status: 'approved', // Auto-approved
     };
 
     try {
