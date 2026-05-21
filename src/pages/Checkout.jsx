@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import emailjs from '@emailjs/browser';
+import { supabase } from '../../supabaseClient';
 import './Studio.css'; // Reuse styles
 
 // ─── EmailJS Configuration ──────────────────────────────────────────────────
@@ -62,27 +63,27 @@ const Checkout = () => {
     return encodeURIComponent(message);
   };
 
-  const handleCompletePayment = () => {
+  const handleCompletePayment = async () => {
     setIsProcessing(true);
     const orderId = `STD-${Math.floor(Math.random() * 1000000)}`;
 
-    setTimeout(() => {
-      const newBooking = {
-        orderId,
-        date: new Date().toLocaleString(),
-        package: pack,
-        bookingDate,
-        bookingTime,
-        customerName,
-        customerPhone,
-        paymentMethod: paymentMethod.toUpperCase(),
-        total: pack.price,
-        status: 'approved', // Auto-approved — no waiting needed
-      };
+    const newBooking = {
+      orderId,
+      date: new Date().toLocaleString(),
+      package: pack,
+      bookingDate,
+      bookingTime,
+      customerName,
+      customerPhone,
+      paymentMethod: paymentMethod.toUpperCase(),
+      total: pack.price,
+      status: 'approved', // Auto-approved — no waiting needed
+    };
 
-      // Save to localStorage
-      const existingBookings = JSON.parse(localStorage.getItem('studio_bookings')) || [];
-      localStorage.setItem('studio_bookings', JSON.stringify([...existingBookings, newBooking]));
+    try {
+      // Save to Supabase
+      const { error } = await supabase.from('bookings').insert([newBooking]);
+      if (error) throw error;
 
       // Send email to admin via EmailJS
       const emailParams = {
@@ -106,7 +107,11 @@ const Checkout = () => {
       setReceiptData(newBooking);
       setStep(3);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 2000);
+    } catch (err) {
+      console.error('Error saving booking to Supabase:', err);
+      alert('Failed to save booking. Please check your network connection and try again.');
+      setIsProcessing(false);
+    }
   };
 
   return (

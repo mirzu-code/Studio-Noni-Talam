@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../supabaseClient';
 import './Studio.css';
 
 const Studio = () => {
@@ -12,7 +13,7 @@ const Studio = () => {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
 
-  // Local Storage Data
+  // Live Database Data
   const [existingBookings, setExistingBookings] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
 
@@ -20,13 +21,109 @@ const Studio = () => {
   const [newTestimonialName, setNewTestimonialName] = useState('');
   const [newTestimonialText, setNewTestimonialText] = useState('');
 
-  useEffect(() => {
-    // Load bookings and testimonials from local storage
-    const loadedBookings = JSON.parse(localStorage.getItem('studio_bookings')) || [];
-    setExistingBookings(loadedBookings);
+  // Check if a time slot is in the past (based on local time)
+  const isSlotInPast = (dateStr, timeStr) => {
+    if (!dateStr) return false;
+    
+    const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local timezone
+    if (dateStr < todayStr) return true; // past day
+    if (dateStr > todayStr) return false; // future day
 
-    const loadedTestimonials = JSON.parse(localStorage.getItem('studio_testimonials')) || [];
-    setTestimonials(loadedTestimonials);
+    // If it's today, we need to compare times
+    const match = timeStr.match(/^(\d+):(\d+)\s*(AM|PM)$/i);
+    if (!match) return false;
+
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    const ampm = match[3].toUpperCase();
+
+    if (ampm === 'PM' && hours < 12) hours += 12;
+    if (ampm === 'AM' && hours === 12) hours = 0;
+
+    const now = new Date();
+    const slotTime = new Date();
+    slotTime.setHours(hours, minutes, 0, 0);
+
+    return now >= slotTime;
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const { data: bookingsData, error: bookingsError } = await supabase
+          .from('bookings')
+          .select('*');
+        if (!bookingsError && bookingsData) {
+          setExistingBookings(bookingsData);
+        }
+
+        const { data: testimonialsData, error: testimonialsError } = await supabase
+          .from('testimonials')
+          .select('*');
+        if (!testimonialsError && testimonialsData) {
+          setTestimonials(testimonialsData);
+        }
+      } catch (err) {
+        console.error('Error fetching initial data:', err);
+      }
+    };
+
+    fetchData();
+
+    // Subscribe to bookings changes
+    const bookingsChannel = supabase
+      .channel('public:bookings')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bookings' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setExistingBookings((prev) => {
+              if (prev.some((b) => b.orderId === payload.new.orderId || b.id === payload.new.id)) return prev;
+              return [...prev, payload.new];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            setExistingBookings((prev) =>
+              prev.map((b) => (b.orderId === payload.new.orderId || b.id === payload.new.id ? payload.new : b))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setExistingBookings((prev) =>
+              prev.filter((b) => b.orderId !== payload.old.orderId && b.id !== payload.old.id)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to testimonials changes
+    const testimonialsChannel = supabase
+      .channel('public:testimonials')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'testimonials' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setTestimonials((prev) => {
+              if (prev.some((t) => t.id === payload.new.id)) return prev;
+              return [...prev, payload.new];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            setTestimonials((prev) =>
+              prev.map((t) => (t.id === payload.new.id ? payload.new : t))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setTestimonials((prev) =>
+              prev.filter((t) => t.id !== payload.old.id)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(bookingsChannel);
+      supabase.removeChannel(testimonialsChannel);
+    };
   }, []);
 
   const packages = [
@@ -92,25 +189,34 @@ const Studio = () => {
     });
   };
 
-  const submitTestimonial = (e) => {
+  const submitTestimonial = async (e) => {
     e.preventDefault();
     if (!newTestimonialName || !newTestimonialText) return;
 
     const newTestimonial = {
-      id: Date.now(),
       author: newTestimonialName,
       text: newTestimonialText,
       status: 'pending', // Requires admin approval
       date: new Date().toLocaleDateString()
     };
 
-    const updatedTestimonials = [...testimonials, newTestimonial];
-    localStorage.setItem('studio_testimonials', JSON.stringify(updatedTestimonials));
-    setTestimonials(updatedTestimonials);
+    try {
+      const { data, error } = await supabase
+        .from('testimonials')
+        .insert([newTestimonial])
+        .select();
 
-    setNewTestimonialName('');
-    setNewTestimonialText('');
-    alert('Thank you! Your testimonial has been submitted and is pending admin approval.');
+      if (error) {
+        throw error;
+      }
+
+      setNewTestimonialName('');
+      setNewTestimonialText('');
+      alert('Thank you! Your testimonial has been submitted and is pending admin approval.');
+    } catch (err) {
+      console.error('Error submitting testimonial:', err);
+      alert('Failed to submit testimonial. Please try again.');
+    }
   };
 
   const approvedTestimonials = testimonials.filter(t => t.status === 'approved');
@@ -172,7 +278,8 @@ const Studio = () => {
                   const spotsLeft = MAX_PAX_PER_SLOT - paxBooked;
                   const full = spotsLeft <= 0;
                   const cantFit = selectedPackage && !full && !canFitPackage(time);
-                  const disabled = full || cantFit;
+                  const inPast = isSlotInPast(bookingDate, time);
+                  const disabled = full || cantFit || inPast;
                   return (
                     <div
                       key={time}
@@ -186,11 +293,11 @@ const Studio = () => {
                         if (!bookingDate) return alert('Please select a date first.');
                         if (!disabled) setBookingTime(time);
                       }}
-                      title={full ? 'Fully booked (6 pax limit reached)' : cantFit ? `Only ${spotsLeft} spot(s) left — not enough for your package` : `${spotsLeft} spot(s) left`}
+                      title={inPast ? 'Session time has passed' : full ? 'Fully booked (6 pax limit reached)' : cantFit ? `Only ${spotsLeft} spot(s) left — not enough for your package` : `${spotsLeft} spot(s) left`}
                     >
                       {time}
-                      <span style={{ display: 'block', fontSize: '0.7rem', marginTop: '2px', color: full ? '#EF4444' : cantFit ? '#F59E0B' : '#64748b' }}>
-                        {full ? 'Full' : `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} left`}
+                      <span style={{ display: 'block', fontSize: '0.7rem', marginTop: '2px', color: inPast ? '#94A3B8' : full ? '#EF4444' : cantFit ? '#F59E0B' : '#64748b' }}>
+                        {inPast ? 'Closed' : full ? 'Full' : `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} left`}
                       </span>
                     </div>
                   );

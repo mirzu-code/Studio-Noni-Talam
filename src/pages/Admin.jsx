@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../supabaseClient';
 
 const statusBadge = (status) => {
   const styles = {
@@ -21,34 +22,134 @@ const Admin = () => {
   const [activeTab, setActiveTab] = useState('bookings');
 
   useEffect(() => {
-    const loadedTestimonials = JSON.parse(localStorage.getItem('studio_testimonials')) || [];
-    setTestimonials(loadedTestimonials);
-    const loadedBookings = JSON.parse(localStorage.getItem('studio_bookings')) || [];
-    setBookings(loadedBookings);
+    const fetchData = async () => {
+      try {
+        const { data: bookingsData, error: bookingsError } = await supabase
+          .from('bookings')
+          .select('*');
+        if (!bookingsError && bookingsData) {
+          setBookings(bookingsData);
+        }
+
+        const { data: testimonialsData, error: testimonialsError } = await supabase
+          .from('testimonials')
+          .select('*');
+        if (!testimonialsError && testimonialsData) {
+          setTestimonials(testimonialsData);
+        }
+      } catch (err) {
+        console.error('Error fetching initial admin data:', err);
+      }
+    };
+
+    fetchData();
+
+    // Subscribe to bookings changes
+    const bookingsChannel = supabase
+      .channel('admin:bookings')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bookings' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setBookings((prev) => {
+              if (prev.some((b) => b.orderId === payload.new.orderId || b.id === payload.new.id)) return prev;
+              return [...prev, payload.new];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            setBookings((prev) =>
+              prev.map((b) => (b.orderId === payload.new.orderId || b.id === payload.new.id ? payload.new : b))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setBookings((prev) =>
+              prev.filter((b) => b.orderId !== payload.old.orderId && b.id !== payload.old.id)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to testimonials changes
+    const testimonialsChannel = supabase
+      .channel('admin:testimonials')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'testimonials' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setTestimonials((prev) => {
+              if (prev.some((t) => t.id === payload.new.id)) return prev;
+              return [...prev, payload.new];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            setTestimonials((prev) =>
+              prev.map((t) => (t.id === payload.new.id ? payload.new : t))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setTestimonials((prev) =>
+              prev.filter((t) => t.id !== payload.old.id)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(bookingsChannel);
+      supabase.removeChannel(testimonialsChannel);
+    };
   }, []);
 
   // ─── Testimonial Actions ───────────────────────────────────────────────────
-  const handleApproveTestimonial = (id) => {
-    const updated = testimonials.map(t => t.id === id ? { ...t, status: 'approved' } : t);
-    setTestimonials(updated);
-    localStorage.setItem('studio_testimonials', JSON.stringify(updated));
+  const handleApproveTestimonial = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('testimonials')
+        .update({ status: 'approved' })
+        .eq('id', id);
+      if (error) throw error;
+      setTestimonials(prev => prev.map(t => t.id === id ? { ...t, status: 'approved' } : t));
+    } catch (err) {
+      console.error('Error approving testimonial:', err);
+    }
   };
-  const handleDeleteTestimonial = (id) => {
-    const updated = testimonials.filter(t => t.id !== id);
-    setTestimonials(updated);
-    localStorage.setItem('studio_testimonials', JSON.stringify(updated));
+  const handleDeleteTestimonial = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('testimonials')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      setTestimonials(prev => prev.filter(t => t.id !== id));
+    } catch (err) {
+      console.error('Error deleting testimonial:', err);
+    }
   };
 
   // ─── Booking Actions ───────────────────────────────────────────────────────
-  const updateBookingStatus = (orderId, newStatus) => {
-    const updated = bookings.map(b => b.orderId === orderId ? { ...b, status: newStatus } : b);
-    setBookings(updated);
-    localStorage.setItem('studio_bookings', JSON.stringify(updated));
+  const updateBookingStatus = async (orderId, newStatus) => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: newStatus })
+        .eq('orderId', orderId);
+      if (error) throw error;
+      setBookings(prev => prev.map(b => b.orderId === orderId ? { ...b, status: newStatus } : b));
+    } catch (err) {
+      console.error('Error updating booking status:', err);
+    }
   };
-  const deleteBooking = (orderId) => {
-    const updated = bookings.filter(b => b.orderId !== orderId);
-    setBookings(updated);
-    localStorage.setItem('studio_bookings', JSON.stringify(updated));
+  const deleteBooking = async (orderId) => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .delete()
+        .eq('orderId', orderId);
+      if (error) throw error;
+      setBookings(prev => prev.filter(b => b.orderId !== orderId));
+    } catch (err) {
+      console.error('Error deleting booking:', err);
+    }
   };
 
   const pendingTestimonials  = testimonials.filter(t => t.status === 'pending');
