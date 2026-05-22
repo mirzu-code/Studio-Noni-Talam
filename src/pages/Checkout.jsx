@@ -65,33 +65,60 @@ const Checkout = () => {
     return encodeURIComponent(message);
   };
 
-  const handleCompletePayment = async () => {
-    setIsProcessing(true);
-    const orderId = `STD-${Math.floor(Math.random() * 1000000)}`;
-
-    const newBooking = {
-      orderId,
-      date: new Date().toLocaleString(),
-      package: pack,
-      bookingDate,
-      bookingTime,
-      customerName,
-      customerPhone,
-      paymentMethod: paymentMethod.toUpperCase(),
-      total: pack.price,
-      status: 'approved',
+    // Generate a unique order ID using UUID to avoid duplicate-key errors
+    const generateOrderId = () => {
+      // UUID is virtually guaranteed to be unique
+      return `STD-${crypto.randomUUID()}`;
     };
-    try {
-      // Save to Supabase
-      console.log('Attempting to insert booking:', newBooking);
-      const { data: insertedData, error } = await supabase.from('bookings').insert([newBooking]);
-      console.log('Insert result:', { insertedData, error });
-      if (error) throw error;
 
-      // Send email to admin via EmailJS (immediate notification)
+    const handleCompletePayment = async () => {
+      setIsProcessing(true);
+      const orderId = generateOrderId();
+
+      const newBooking = {
+        orderId,
+        date: new Date().toLocaleString(),
+        package: pack,
+        bookingDate,
+        bookingTime,
+        customerName,
+        customerPhone,
+        paymentMethod: paymentMethod.toUpperCase(),
+        total: pack.price,
+        status: 'approved',
+      };
+
+      // Attempt insert with a simple retry on duplicate orderId (max 3 attempts)
+      let insertResult;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        console.log(`Attempt ${attempt + 1} inserting booking:` , newBooking);
+        const { data, error } = await supabase.from('bookings').insert([newBooking]);
+        if (!error) {
+          insertResult = { data, error: null };
+          break;
+        }
+        console.error('Insert error:', error);
+        // If it's a duplicate key error, generate a new orderId and retry
+        if (error.message && error.message.includes('duplicate key')) {
+          newBooking.orderId = generateOrderId();
+          continue;
+        }
+        // For any other error, break out and handle below
+        insertResult = { data, error };
+        break;
+      }
+
+      if (insertResult?.error) {
+        console.error('Final insert failure:', insertResult.error);
+        alert('Failed to save booking. Please check your network connection and try again.');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Send email to admin only after a successful insert
       const emailParams = {
         to_email: 'ammarizzu14@gmail.com',
-        order_id: orderId,
+        order_id: newBooking.orderId,
         customer_name: customerName,
         customer_phone: customerPhone,
         package_name: `${pack.title} (${pack.pax} Person)`,
@@ -109,12 +136,7 @@ const Checkout = () => {
       setReceiptData(newBooking);
       setStep(3);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (err) {
-      console.error('Error saving booking to Supabase:', err);
-      alert('Failed to save booking. Please check your network connection and try again.');
-      setIsProcessing(false);
-    }
-  };
+    };
 
   // Send owner notification after receipt is displayed (step 3)
   React.useEffect(() => {
