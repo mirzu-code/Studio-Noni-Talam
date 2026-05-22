@@ -103,14 +103,15 @@ const Checkout = () => {
           newBooking.orderId = generateOrderId();
           continue;
         }
-        // For any other error, break out and handle below
+        // Any other error – stop retrying
         insertResult = { data, error };
         break;
       }
 
       if (insertResult?.error) {
-        console.error('Final insert failure:', insertResult.error);
-        alert('Failed to save booking. Please check your network connection and try again.');
+        const errMsg = insertResult.error?.message || JSON.stringify(insertResult.error);
+        console.error('Final insert failure:', errMsg);
+        alert(`Failed to save booking: ${errMsg}`);
         setIsProcessing(false);
         return;
       }
