@@ -23,6 +23,8 @@ const Checkout = () => {
 
   // Admin WhatsApp
   const ADMIN_WHATSAPP = '60183168944';
+  // Owner Notification Email (will be sent after receipt is confirmed)
+  const OWNER_EMAIL = 'owner@example.com'; // TODO: replace with actual owner email
 
   const packages = [
     { id: 1, title: 'Package 1', pax: 1, price: 100, icon: '🧑' },
@@ -68,36 +70,35 @@ const Checkout = () => {
     const orderId = `STD-${Math.floor(Math.random() * 1000000)}`;
 
     const newBooking = {
-  orderId,
-  date: new Date().toLocaleString(),
-  package: pack,
-  bookingDate,
-  bookingTime,
-  customerName,
-  customerPhone,
-  paymentMethod: paymentMethod.toUpperCase(),
-  total: pack.price,
-  status: 'approved', // Auto-approved
-};
+      orderId,
+      date: new Date().toLocaleString(),
+      package: pack,
+      bookingDate,
+      bookingTime,
+      customerName,
+      customerPhone,
+      paymentMethod: paymentMethod.toUpperCase(),
+      total: pack.price,
+      status: 'approved', // Auto-approved
+    };
     try {
       // Save to Supabase
       const { error } = await supabase.from('bookings').insert([newBooking]);
       if (error) throw error;
 
-      // Send email to admin via EmailJS
+      // Send email to admin via EmailJS (immediate notification)
       const emailParams = {
-        to_email:       'ammarizzu14@gmail.com',
-        order_id:       orderId,
-        customer_name:  customerName,
+        to_email: 'ammarizzu14@gmail.com',
+        order_id: orderId,
+        customer_name: customerName,
         customer_phone: customerPhone,
-        package_name:   `${pack.title} (${pack.pax} Person)`,
-        booking_date:   bookingDate,
-        booking_time:   bookingTime,
+        package_name: `${pack.title} (${pack.pax} Person)`,
+        booking_date: bookingDate,
+        booking_time: bookingTime,
         payment_method: paymentMethod.toUpperCase(),
-        total_amount:   `RM ${pack.price.toFixed(2)}`,
+        total_amount: `RM ${pack.price.toFixed(2)}`,
         booking_time_submitted: new Date().toLocaleString(),
       };
-
       emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY)
         .then(() => console.log('Admin email sent successfully.'))
         .catch((err) => console.error('Failed to send admin email:', err));
@@ -112,6 +113,29 @@ const Checkout = () => {
       setIsProcessing(false);
     }
   };
+
+  // Send owner notification after receipt is displayed (step 3)
+  React.useEffect(() => {
+    if (step === 3 && receiptData) {
+      const ownerEmailParams = {
+        to_email: OWNER_EMAIL,
+        order_id: receiptData.orderId,
+        customer_name: receiptData.customerName,
+        customer_phone: receiptData.customerPhone,
+        package_name: `${receiptData.package.title} (${receiptData.package.pax} Person)`,
+        booking_date: receiptData.bookingDate,
+        booking_time: receiptData.bookingTime,
+        payment_method: receiptData.paymentMethod,
+        total_amount: `RM ${receiptData.total.toFixed(2)}`,
+        booking_time_submitted: receiptData.date,
+        // Additional flag to indicate final confirmation
+        status: 'completed',
+      };
+      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, ownerEmailParams, EMAILJS_PUBLIC_KEY)
+        .then(() => console.log('Owner email sent successfully.'))
+        .catch((err) => console.error('Failed to send owner email:', err));
+    }
+  }, [step, receiptData]);
 
   return (
     <div className="studio-page">
