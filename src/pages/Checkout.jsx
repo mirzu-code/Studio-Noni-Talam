@@ -72,7 +72,9 @@ const Checkout = () => {
     const newBooking = {
       orderId,
       date: new Date().toLocaleString(),
-      package: pack,
+      package_id: pack.id,
+      package_name: pack.title,
+      package_price: pack.price,
       bookingDate,
       bookingTime,
       customerName,
