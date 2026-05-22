@@ -83,7 +83,9 @@ const Checkout = () => {
     };
     try {
       // Save to Supabase
-      const { error } = await supabase.from('bookings').insert([newBooking]);
+      console.log('Attempting to insert booking:', newBooking);
+      const { data: insertedData, error } = await supabase.from('bookings').insert([newBooking]);
+      console.log('Insert result:', { insertedData, error });
       if (error) throw error;
 
       // Send email to admin via EmailJS (immediate notification)
