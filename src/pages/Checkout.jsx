@@ -72,16 +72,14 @@ const Checkout = () => {
     const newBooking = {
       orderId,
       date: new Date().toLocaleString(),
-      package_id: pack.id,
-      package_name: pack.title,
-      package_price: pack.price,
+      package: pack,
       bookingDate,
       bookingTime,
       customerName,
       customerPhone,
       paymentMethod: paymentMethod.toUpperCase(),
       total: pack.price,
-      status: 'approved', // Auto-approved
+      status: 'approved',
     };
     try {
       // Save to Supabase
