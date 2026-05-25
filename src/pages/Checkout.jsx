@@ -105,38 +105,39 @@ const Checkout = () => {
         }
         // Any other error – stop retrying
         insertResult = { data, error };
-        break;
-      }
+      // Save to Supabase and return the inserted row
+      console.log('Attempting Supabase insert:', newBooking);
+      const { data: insertedRows, error: insertError } = await supabase
+        .from('bookings')
+        .insert([newBooking])
+        .select(); // ask Supabase to return the inserted record
+      console.log('Supabase insert result:', { insertedRows, insertError });
+      if (insertError) throw insertError;
 
-      if (insertResult?.error) {
-        const errMsg = insertResult.error?.message || JSON.stringify(insertResult.error);
-        console.error('Final insert failure:', errMsg);
-        alert(`Failed to save booking: ${errMsg}`);
-        setIsProcessing(false);
-        return;
-      }
-
+      // Use the first (and only) inserted row as receipt data
+      const savedBooking = insertedRows[0];
       // Send email to admin only after a successful insert
       const emailParams = {
         to_email: 'ammarizzu14@gmail.com',
-        order_id: newBooking.orderId,
-        customer_name: customerName,
-        customer_phone: customerPhone,
+        order_id: savedBooking.orderId,
+        customer_name: savedBooking.customerName,
+        customer_phone: savedBooking.customerPhone,
         package_name: `${pack.title} (${pack.pax} Person)`,
-        booking_date: bookingDate,
-        booking_time: bookingTime,
-        payment_method: paymentMethod.toUpperCase(),
-        total_amount: `RM ${pack.price.toFixed(2)}`,
-        booking_time_submitted: new Date().toLocaleString(),
+        booking_date: savedBooking.bookingDate,
+        booking_time: savedBooking.bookingTime,
+        payment_method: savedBooking.paymentMethod,
+        total_amount: `RM ${savedBooking.total.toFixed(2)}`,
+        booking_time_submitted: savedBooking.date,
       };
       emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY)
         .then(() => console.log('Admin email sent successfully.'))
         .catch((err) => console.error('Failed to send admin email:', err));
-
+      // Update UI state with the saved booking
       setIsProcessing(false);
-      setReceiptData(newBooking);
+      setReceiptData(savedBooking);
       setStep(3);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      return; // early exit – we’ve handled success path
     };
 
   // Send owner notification after receipt is displayed (step 3)
