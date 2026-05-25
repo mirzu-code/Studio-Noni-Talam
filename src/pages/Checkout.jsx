@@ -105,6 +105,7 @@ const Checkout = () => {
         }
         // Any other error – stop retrying
         insertResult = { data, error };
+}
       // Save to Supabase and return the inserted row
       console.log('Attempting Supabase insert:', newBooking);
       const { data: insertedRows, error: insertError } = await supabase
