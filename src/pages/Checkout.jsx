@@ -72,6 +72,79 @@ const Checkout = () => {
     };
 
     const handleCompletePayment = async () => {
+    setIsProcessing(true);
+    // Generate a unique orderId
+    let orderId = generateOrderId();
+    const newBooking = {
+      orderId,
+      date: new Date().toLocaleString(),
+      package: pack,
+      bookingDate,
+      bookingTime,
+      customerName,
+      customerPhone,
+      paymentMethod: paymentMethod.toUpperCase(),
+      total: pack.price,
+      status: 'approved',
+    };
+
+    // Retry insert (max 3 attempts) and request the inserted row
+    let insertedRows = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      console.log(`Attempt ${attempt + 1} inserting booking:`, newBooking);
+      const { data, error } = await supabase
+        .from('bookings')
+        .insert([newBooking])
+        .select(); // ask Supabase to return the inserted record
+
+      if (!error && data && data.length > 0) {
+        insertedRows = data;
+        break;
+      }
+
+      console.error('Insert error:', error);
+      // Duplicate key – generate a new orderId and retry
+      if (error?.message?.includes('duplicate key')) {
+        newBooking.orderId = generateOrderId();
+        continue;
+      }
+      // Any other error – abort
+      alert(`Failed to save booking: ${error?.message || error}`);
+      setIsProcessing(false);
+      return;
+    }
+
+    if (!insertedRows) {
+      alert('Failed to save booking after multiple attempts.');
+      setIsProcessing(false);
+      return;
+    }
+
+    const savedBooking = insertedRows[0];
+    // Send email to admin only after a successful insert
+    const emailParams = {
+      to_email: 'ammarizzu14@gmail.com',
+      order_id: savedBooking.orderId,
+      customer_name: savedBooking.customerName,
+      customer_phone: savedBooking.customerPhone,
+      package_name: `${pack.title} (${pack.pax} Person)`,
+      booking_date: savedBooking.bookingDate,
+      booking_time: savedBooking.bookingTime,
+      payment_method: savedBooking.paymentMethod,
+      total_amount: `RM ${savedBooking.total.toFixed(2)}`,
+      booking_time_submitted: savedBooking.date,
+    };
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY)
+      .then(() => console.log('Admin email sent successfully.'))
+      .catch((err) => console.error('Failed to send admin email:', err));
+
+    // Update UI state with the saved booking
+    setIsProcessing(false);
+    setReceiptData(savedBooking);
+    setStep(3);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
       setIsProcessing(true);
       const orderId = generateOrderId();
 
