@@ -182,7 +182,7 @@ const Checkout = () => {
   return (
     <div className="studio-page">
       <section className="studio-hero" style={{ padding: '3rem 2rem' }}>
-        <h1 className="animate-fade-up" style={{ fontSize: '2.5rem' }}>Checkout</h1>
+        <h1 className="animate-fade-up" style={{ fontSize: '2.5rem' }}>Pembayaran</h1>
       </section>
 
       <div className="studio-container animate-fade-in" style={{ marginTop: '-2rem' }}>
@@ -190,9 +190,9 @@ const Checkout = () => {
         {step === 2 && (
           <div>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-              <h2 className="studio-section-title">Complete Your Payment</h2>
+              <h2 className="studio-section-title">Lengkapkan Pembayaran Anda</h2>
               <p style={{ fontSize: '1.2rem', color: '#475569' }}>
-                Total Amount: <strong style={{ color: '#059669', fontSize: '1.5rem' }}>RM {pack.price.toFixed(2)}</strong>
+                Jumlah Total: <strong style={{ color: '#059669', fontSize: '1.5rem' }}>RM {pack.price.toFixed(2)}</strong>
               </p>
             </div>
 
@@ -200,18 +200,18 @@ const Checkout = () => {
               <>
                 <div className="payment-methods">
                   <div className={`payment-method ${paymentMethod === 'qr' ? 'selected' : ''}`} onClick={() => setPaymentMethod('qr')}>QR Pay (DuitNow)</div>
-                  <div className={`payment-method ${paymentMethod === 'fpx' ? 'selected' : ''}`} onClick={() => setPaymentMethod('fpx')}>FPX / Bank Transfer</div>
+                  <div className={`payment-method ${paymentMethod === 'fpx' ? 'selected' : ''}`} onClick={() => setPaymentMethod('fpx')}>FPX / Pemindahan Bank</div>
                   <div className={`payment-method ${paymentMethod === 'tng' ? 'selected' : ''}`} onClick={() => setPaymentMethod('tng')}>Touch 'n Go eWallet</div>
-                  <div className={`payment-method ${paymentMethod === 'card' ? 'selected' : ''}`} onClick={() => setPaymentMethod('card')}>Credit / Debit Card</div>
+                  <div className={`payment-method ${paymentMethod === 'card' ? 'selected' : ''}`} onClick={() => setPaymentMethod('card')}>Kad Kredit / Debit</div>
                 </div>
 
                 <div style={{ background: '#F8FAFC', padding: '2rem', borderRadius: '8px', border: '1px solid #E2E8F0', marginBottom: '2rem', textAlign: 'center' }}>
                   {paymentMethod === 'qr' && (
                     <>
                       <h3 style={{ color: '#E11D48', marginBottom: '1rem' }}>DUITNOW QR</h3>
-                      <p>Scan the QR code below to complete your payment.</p>
+                      <p>Imbas kod QR di bawah untuk melengkapkan pembayaran anda.</p>
                       <img src="/qr-code.jpg" alt="QR Code" style={{ width: '200px', margin: '1rem auto', borderRadius: '8px', border: '4px solid white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} />
-                      <p style={{ fontSize: '0.9rem', color: '#64748b' }}>Reference: STUDIO KUIH TALAM</p>
+                      <p style={{ fontSize: '0.9rem', color: '#64748b' }}>Rujukan: STUDIO KUIH TALAM</p>
                     </>
                   )}
                   {paymentMethod === 'fpx' && (
@@ -224,28 +224,28 @@ const Checkout = () => {
                   {paymentMethod === 'tng' && (
                     <>
                       <h3 style={{ color: '#0284C7' }}>TOUCH 'N GO</h3>
-                      <p>Send your payment to our business number:</p>
+                      <p>Hantar pembayaran anda ke nombor perniagaan kami:</p>
                       <h2 style={{ margin: '1rem 0' }}>018-316 8944</h2>
                     </>
                   )}
                   {paymentMethod === 'card' && (
                     <div style={{ background: '#FEF3C7', color: '#92400E', padding: '1rem', borderRadius: '8px' }}>
-                      <p>Card payment gateway requires integration. Please use QR Pay, FPX, or TnG for now.</p>
+                      <p>Pintu gerbang pembayaran kad memerlukan integrasi. Sila gunakan QR Pay, FPX, atau TnG buat sementara ini.</p>
                     </div>
                   )}
                 </div>
 
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                  <Link to="/" className="studio-btn" style={{ background: '#94A3B8', flex: 1, textDecoration: 'none', textAlign: 'center' }}>Back</Link>
+                  <Link to="/" className="studio-btn" style={{ background: '#94A3B8', flex: 1, textDecoration: 'none', textAlign: 'center' }}>Kembali</Link>
                   <button type="button" onClick={handleCompletePayment} className="studio-btn" style={{ flex: 2 }} disabled={paymentMethod === 'card'}>
-                    Confirm & Get Receipt
+                    Sahkan & Dapatkan Resit
                   </button>
                 </div>
               </>
             ) : (
               <div style={{ textAlign: 'center', padding: '3rem 0' }}>
                  <div style={{ width: '50px', height: '50px', border: '4px solid #DFE6E1', borderTop: '4px solid #10B981', borderRadius: '50%', animation: 'spin-slow 1s linear infinite', margin: '0 auto 1.5rem' }}></div>
-                 <h3>Processing your booking...</h3>
+                 <h3>Memproses tempahan anda...</h3>
               </div>
             )}
           </div>
@@ -254,53 +254,53 @@ const Checkout = () => {
         {step === 3 && receiptData && (
           <div className="studio-receipt animate-fade-in">
             <div className="receipt-header">
-              <h2>Booking Confirmed!</h2>
-              <p>Thank you for choosing Studio Noni Talam</p>
+              <h2>Tempahan Disahkan!</h2>
+              <p>Terima kasih kerana memilih Studio Noni Talam</p>
             </div>
             
             <div className="receipt-body">
               <div style={{ marginBottom: '2rem' }}>
                 <div className="receipt-row">
-                  <span style={{ color: '#64748b' }}>Booking ID:</span>
+                  <span style={{ color: '#64748b' }}>ID Tempahan:</span>
                   <strong>{receiptData.orderId}</strong>
                 </div>
                 <div className="receipt-row">
-                  <span style={{ color: '#64748b' }}>Booking Date:</span>
+                  <span style={{ color: '#64748b' }}>Tarikh Tempahan:</span>
                   <strong>{receiptData.date}</strong>
                 </div>
                 <div className="receipt-row">
-                  <span style={{ color: '#64748b' }}>Payment Method:</span>
+                  <span style={{ color: '#64748b' }}>Kaedah Pembayaran:</span>
                   <strong>{receiptData.paymentMethod}</strong>
                 </div>
               </div>
 
-              <h3 style={{ borderBottom: '2px solid #E2E8F0', paddingBottom: '0.5rem', marginBottom: '1rem' }}>Session Details</h3>
+              <h3 style={{ borderBottom: '2px solid #E2E8F0', paddingBottom: '0.5rem', marginBottom: '1rem' }}>Butiran Sesi</h3>
               <div className="receipt-row">
-                <span>Class Package:</span>
-                <strong>{receiptData.package.title} ({receiptData.package.pax} Person)</strong>
+                <span>Pakej Kelas:</span>
+                <strong>{receiptData.package.title} ({receiptData.package.pax} Orang)</strong>
               </div>
               <div className="receipt-row">
-                <span>Session Date:</span>
+                <span>Tarikh Sesi:</span>
                 <strong>{receiptData.bookingDate}</strong>
               </div>
               <div className="receipt-row">
-                <span>Session Time:</span>
+                <span>Waktu Sesi:</span>
                 <strong>{receiptData.bookingTime}</strong>
               </div>
               <div className="receipt-row">
-                <span>Customer Name:</span>
+                <span>Nama Pelanggan:</span>
                 <strong>{receiptData.customerName}</strong>
               </div>
 
               <div className="receipt-total">
-                <span>Total Paid</span>
+                <span>Jumlah Dibayar</span>
                 <span className="amount">RM {receiptData.total.toFixed(2)}</span>
               </div>
 
               <div style={{ background: '#ECFDF5', padding: '1.5rem', borderRadius: '8px', border: '1px solid #10B981', marginTop: '2rem', textAlign: 'center' }}>
-                <h4 style={{ color: '#047857', marginBottom: '0.5rem' }}>Final Step!</h4>
+                <h4 style={{ color: '#047857', marginBottom: '0.5rem' }}>Langkah Akhir!</h4>
                 <p style={{ fontSize: '0.9rem', marginBottom: '1rem', color: '#065F46' }}>
-                  Please send your receipt to our WhatsApp to finalize your studio booking.
+                  Sila hantar resit anda ke WhatsApp kami untuk memuktamadkan tempahan studio anda.
                 </p>
                 <a 
                   href={`https://wa.me/${ADMIN_WHATSAPP}?text=${generateWhatsAppMessage(receiptData.orderId)}`} 
@@ -309,11 +309,11 @@ const Checkout = () => {
                   className="studio-btn"
                   style={{ textDecoration: 'none', display: 'inline-block', background: '#25D366' }}
                 >
-                  Send Receipt via WhatsApp
+                  Hantar Resit melalui WhatsApp
                 </a>
               </div>
               <div style={{ marginTop: '1rem', textAlign: 'center' }}>
-                <Link to="/" style={{ color: '#059669', fontWeight: 'bold', textDecoration: 'none' }}>Return to Home</Link>
+                <Link to="/" style={{ color: '#059669', fontWeight: 'bold', textDecoration: 'none' }}>Kembali ke Halaman Utama</Link>
               </div>
             </div>
           </div>

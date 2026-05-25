@@ -140,7 +140,7 @@ const Studio = () => {
     const day = selectedDate.getDay();
     // 0 is Sunday
     if (day === 0) {
-      alert('Sorry, the studio is closed on Sundays. Please select a date from Monday to Saturday.');
+      alert('Maaf, studio ditutup pada hari Ahad. Sila pilih tarikh dari Isnin hingga Sabtu.');
       setBookingDate('');
     } else {
       setBookingDate(e.target.value);
@@ -172,10 +172,10 @@ const Studio = () => {
   const handleProceedToPayment = (e) => {
     e.preventDefault();
     if (!selectedPackage || !bookingDate || !bookingTime) {
-      return alert('Please select a package, date, and time to proceed.');
+      return alert('Sila pilih pakej, tarikh, dan waktu untuk meneruskan.');
     }
     if (!canFitPackage(bookingTime)) {
-      return alert(`Not enough spots for this package. Please choose a different time slot.`);
+      return alert(`Tidak cukup tempat untuk pakej ini. Sila pilih slot waktu yang lain.`);
     }
 
     navigate('/checkout', {
@@ -212,10 +212,10 @@ const Studio = () => {
 
       setNewTestimonialName('');
       setNewTestimonialText('');
-      alert('Thank you! Your testimonial has been submitted and is pending admin approval.');
+      alert('Terima kasih! Testimoni anda telah dikemukakan dan sedang menunggu perlulusan admin.');
     } catch (err) {
       console.error('Error submitting testimonial:', err);
-      alert('Failed to submit testimonial. Please try again.');
+      alert('Gagal menghantar testimoni. Sila cuba lagi.');
     }
   };
 
@@ -225,9 +225,9 @@ const Studio = () => {
     <div className="studio-page">
       {/* Hero Section */}
       <section className="studio-hero">
-        <h1 className="animate-fade-up">Master the Art of Kuih Talam</h1>
+        <h1 className="animate-fade-up">Kuasai Seni Membuat Kuih Talam</h1>
         <p className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
-          Join our premium studio sessions and learn the secrets of making authentic, delicious Kuih Talam from Monday to Saturday.
+          Sertai sesi studio premium kami dan pelajari rahsia membuat Kuih Talam yang asli dan sedap dari Isnin hingga Sabtu.
         </p>
       </section>
 
@@ -238,7 +238,7 @@ const Studio = () => {
             onDoubleClick={() => navigate('/admin')}
             style={{ cursor: 'pointer' }}
           >
-            Select Your Package
+            Pilih Pakej Anda
           </h2>
           <div className="packages-grid">
             {packages.map((pkg) => (
@@ -250,16 +250,16 @@ const Studio = () => {
                 <div className="package-icon">{pkg.icon}</div>
                 <h3 className="package-title">{pkg.title}</h3>
                 <div className="package-price">RM {pkg.price}</div>
-                <p style={{ color: '#64748b', fontSize: '0.9rem' }}>For {pkg.pax} Person{pkg.pax > 1 ? 's' : ''}</p>
+                <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Untuk {pkg.pax} Orang{pkg.pax > 1 ? '' : ''}</p>
               </div>
             ))}
           </div>
 
-          <h2 className="studio-section-title">Schedule Your Session</h2>
+          <h2 className="studio-section-title">Jadualkan Sesi Anda</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
             <div>
               <div className="studio-form-group">
-                <label className="studio-label">Select Date (Mon - Sat)</label>
+                <label className="studio-label">Pilih Tarikh (Isn - Sab)</label>
                 <input
                   type="date"
                   className="studio-input"
@@ -271,7 +271,7 @@ const Studio = () => {
               </div>
             </div>
             <div>
-              <label className="studio-label" style={{ marginBottom: '1rem' }}>Select Time Slot</label>
+              <label className="studio-label" style={{ marginBottom: '1rem' }}>Pilih Slot Waktu</label>
               <div className="time-slots">
                 {timeSlots.map(time => {
                   const paxBooked = getPaxBooked(time);
@@ -290,14 +290,14 @@ const Studio = () => {
                         background: disabled ? '#f1f5f9' : ''
                       }}
                       onClick={() => {
-                        if (!bookingDate) return alert('Please select a date first.');
+                        if (!bookingDate) return alert('Sila pilih tarikh terlebih dahulu.');
                         if (!disabled) setBookingTime(time);
                       }}
-                      title={inPast ? 'Session time has passed' : full ? 'Fully booked (6 pax limit reached)' : cantFit ? `Only ${spotsLeft} spot(s) left — not enough for your package` : `${spotsLeft} spot(s) left`}
+                      title={inPast ? 'Waktu sesi telah berlalu' : full ? 'Penuh (had 6 orang tercapai)' : cantFit ? `Hanya ${spotsLeft} tempat tersisa — tidak cukup untuk pakej anda` : `${spotsLeft} tempat tersisa`}
                     >
                       {time}
                       <span style={{ display: 'block', fontSize: '0.7rem', marginTop: '2px', color: inPast ? '#94A3B8' : full ? '#EF4444' : cantFit ? '#F59E0B' : '#64748b' }}>
-                        {inPast ? 'Closed' : full ? 'Full' : `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} left`}
+                        {inPast ? 'Ditutup' : full ? 'Penuh' : `${spotsLeft} tempat${spotsLeft !== 1 ? '' : ''} tersisa`}
                       </span>
                     </div>
                   );
@@ -306,20 +306,20 @@ const Studio = () => {
             </div>
           </div>
 
-          <h2 className="studio-section-title">Your Details</h2>
+          <h2 className="studio-section-title">Detail Anda</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
             <div className="studio-form-group">
-              <label className="studio-label">Full Name</label>
-              <input type="text" className="studio-input" required placeholder="e.g. Ali Bin Abu" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+              <label className="studio-label">Nama Penuh</label>
+              <input type="text" className="studio-input" required placeholder="cth. Ali Bin Abu" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
             </div>
             <div className="studio-form-group">
-              <label className="studio-label">WhatsApp Number</label>
-              <input type="tel" className="studio-input" required placeholder="e.g. 0123456789" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
+              <label className="studio-label">Nombor WhatsApp</label>
+              <input type="tel" className="studio-input" required placeholder="cth. 0123456789" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
             </div>
           </div>
 
           <button type="submit" className="studio-btn" disabled={!selectedPackage || !bookingDate || !bookingTime}>
-            Proceed to Payment
+            Teruskan ke Pembayaran
           </button>
         </form>
 
@@ -327,11 +327,11 @@ const Studio = () => {
 
         {/* Testimonials Section */}
         <div className="testimonials-section">
-          <h2 className="studio-section-title">Student Testimonials</h2>
+          <h2 className="studio-section-title">Testimonial Pelajar</h2>
 
           <div style={{ display: 'grid', gap: '1.5rem', marginBottom: '3rem' }}>
             {approvedTestimonials.length === 0 ? (
-              <p style={{ textAlign: 'center', color: '#64748b' }}>No testimonials yet. Be the first to share your experience!</p>
+              <p style={{ textAlign: 'center', color: '#64748b' }}>Tiada testimoni lagi. Jadilah yang pertama berkongsi pengalaman anda!</p>
             ) : (
               approvedTestimonials.map(t => (
                 <div key={t.id} style={{ background: '#F8FAFC', padding: '1.5rem', borderRadius: '8px', borderLeft: '4px solid #D4AF37' }}>
@@ -343,17 +343,17 @@ const Studio = () => {
           </div>
 
           <div style={{ background: 'white', padding: '2rem', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
-            <h3 style={{ marginBottom: '1.5rem', color: '#047857' }}>Write a Review</h3>
+            <h3 style={{ marginBottom: '1.5rem', color: '#047857' }}>Tulis Ulasan</h3>
             <form onSubmit={submitTestimonial}>
               <div className="studio-form-group">
-                <label className="studio-label">Your Name</label>
+                <label className="studio-label">Nama Anda</label>
                 <input type="text" className="studio-input" required value={newTestimonialName} onChange={e => setNewTestimonialName(e.target.value)} />
               </div>
               <div className="studio-form-group">
-                <label className="studio-label">Your Experience</label>
+                <label className="studio-label">Pengalaman Anda</label>
                 <textarea className="studio-input" rows="4" required value={newTestimonialText} onChange={e => setNewTestimonialText(e.target.value)}></textarea>
               </div>
-              <button type="submit" className="studio-btn" style={{ background: '#0F172A' }}>Submit </button>
+              <button type="submit" className="studio-btn" style={{ background: '#0F172A' }}>Hantar </button>
             </form>
           </div>
         </div>
