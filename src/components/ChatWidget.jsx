@@ -1,16 +1,52 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import './ChatWidget.css';
 
 const ChatWidget = () => {
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [animationState, setAnimationState] = useState('wave'); // wave, eating, idle, clicked
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([
-    {
-      type: 'bot',
-      text: 'Assalamualaikum! 👋 Ada soalan tentang sesi kuih talam kami? Saya di sini untuk membantu!'
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
+
+  // Page-specific questions
+  const pageQuestions = {
+    '/': [
+      'Pukul berapa sesi bermula?',
+      'Adakah slot penuh?',
+      'Berapa harga per orang?',
+      'Boleh buku untuk berapa ramai?'
+    ],
+    '/checkout': [
+      'Kaedah pembayaran apa tersedia?',
+      'Bagaimana jika saya tak boleh hadir?',
+      'Berapa lama sesi?',
+      'Adakah tempat letak kereta?'
+    ],
+    '/admin': [
+      'Bagaimana untuk melihat semua tempahan?',
+      'Boleh ubah booking pelanggan?'
+    ]
+  };
+
+  const pageGreetings = {
+    '/': 'Assalamualaikum! 👋 Ada soalan tentang sesi kuih talam kami?',
+    '/checkout': 'Assalamualaikum! 💚 Ada soalan tentang pembayaran?',
+    '/admin': 'Selamat datang Admin! 📊 Ada yang boleh saya bantu?'
+  };
+
+  const currentQuestions = pageQuestions[location.pathname] || pageQuestions['/'];
+  const currentGreeting = pageGreetings[location.pathname] || pageGreetings['/'];
+
+  // Initialize messages when page changes
+  useEffect(() => {
+    setMessages([
+      {
+        type: 'bot',
+        text: currentGreeting
+      }
+    ]);
+  }, [location.pathname]);
 
   // Cycle through animations
   useEffect(() => {
@@ -31,12 +67,28 @@ const ChatWidget = () => {
     setTimeout(() => setAnimationState('wave'), 600);
   };
 
+  const handleQuestionClick = (question) => {
+    // Add user message
+    setMessages(prev => [...prev, { type: 'user', text: question }]);
+    setMessage('');
+    setAnimationState('eating');
+
+    // Simulate bot response
+    setTimeout(() => {
+      setMessages(prev => [...prev, {
+        type: 'bot',
+        text: 'Terima kasih atas pertanyaan anda! Sila hubungi kami di WhatsApp 018-316 8944 untuk jawapan yang lebih detail. 😊'
+      }]);
+      setAnimationState('wave');
+    }, 1500);
+  };
+
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!message.trim()) return;
 
     // Add user message
-    setMessages([...messages, { type: 'user', text: message }]);
+    setMessages(prev => [...prev, { type: 'user', text: message }]);
     setMessage('');
     setAnimationState('eating');
 
@@ -52,7 +104,7 @@ const ChatWidget = () => {
 
   return (
     <>
-      {/* Floating Chat Button */}
+      {/* Floating Chat Button - Character as Icon */}
       <div 
         className="chat-widget-button"
         onClick={handleWidgetClick}
@@ -63,9 +115,15 @@ const ChatWidget = () => {
             src="/kuih-character.png" 
             alt="Kuih Talam Chat" 
             className="character-sprite"
+            onError={(e) => {
+              e.target.style.display = 'none';
+              e.target.nextElementSibling.style.display = 'flex';
+            }}
           />
+          <div className="fallback-icon" style={{ display: 'none' }}>
+            🍵
+          </div>
         </div>
-        <span className="chat-badge">?</span>
       </div>
 
       {/* Chat Window */}
@@ -90,6 +148,24 @@ const ChatWidget = () => {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Quick Question Buttons */}
+          <div className="quick-questions">
+            <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.5rem 0', fontWeight: 500 }}>
+              Pertanyaan Popular:
+            </p>
+            <div className="questions-grid">
+              {currentQuestions.map((question, idx) => (
+                <button
+                  key={idx}
+                  className="question-btn"
+                  onClick={() => handleQuestionClick(question)}
+                >
+                  {question}
+                </button>
+              ))}
+            </div>
           </div>
 
           <form onSubmit={handleSendMessage} className="chat-input-form">
