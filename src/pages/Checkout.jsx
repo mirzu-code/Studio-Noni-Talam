@@ -145,74 +145,7 @@ const Checkout = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-      setIsProcessing(true);
-      const orderId = generateOrderId();
 
-      const newBooking = {
-        orderId,
-        date: new Date().toLocaleString(),
-        package: pack,
-        bookingDate,
-        bookingTime,
-        customerName,
-        customerPhone,
-        paymentMethod: paymentMethod.toUpperCase(),
-        total: pack.price,
-        status: 'approved',
-      };
-
-      // Attempt insert with a simple retry on duplicate orderId (max 3 attempts)
-      let insertResult;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        console.log(`Attempt ${attempt + 1} inserting booking:` , newBooking);
-        const { data, error } = await supabase.from('bookings').insert([newBooking]);
-        if (!error) {
-          insertResult = { data, error: null };
-          break;
-        }
-        console.error('Insert error:', error);
-        // If it's a duplicate key error, generate a new orderId and retry
-        if (error.message && error.message.includes('duplicate key')) {
-          newBooking.orderId = generateOrderId();
-          continue;
-        }
-        // Any other error – stop retrying
-        insertResult = { data, error };
-}
-      // Save to Supabase and return the inserted row
-      console.log('Attempting Supabase insert:', newBooking);
-      const { data: insertedRows, error: insertError } = await supabase
-        .from('bookings')
-        .insert([newBooking])
-        .select(); // ask Supabase to return the inserted record
-      console.log('Supabase insert result:', { insertedRows, insertError });
-      if (insertError) throw insertError;
-
-      // Use the first (and only) inserted row as receipt data
-      const savedBooking = insertedRows[0];
-      // Send email to admin only after a successful insert
-      const emailParams = {
-        to_email: 'ammarizzu14@gmail.com',
-        order_id: savedBooking.orderId,
-        customer_name: savedBooking.customerName,
-        customer_phone: savedBooking.customerPhone,
-        package_name: `${pack.title} (${pack.pax} Person)`,
-        booking_date: savedBooking.bookingDate,
-        booking_time: savedBooking.bookingTime,
-        payment_method: savedBooking.paymentMethod,
-        total_amount: `RM ${savedBooking.total.toFixed(2)}`,
-        booking_time_submitted: savedBooking.date,
-      };
-      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY)
-        .then(() => console.log('Admin email sent successfully.'))
-        .catch((err) => console.error('Failed to send admin email:', err));
-      // Update UI state with the saved booking
-      setIsProcessing(false);
-      setReceiptData(savedBooking);
-      setStep(3);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return; // early exit – we’ve handled success path
-    };
 
   // Send owner notification after receipt is displayed (step 3)
   React.useEffect(() => {
