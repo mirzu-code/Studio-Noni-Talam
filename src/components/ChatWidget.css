@@ -31,10 +31,11 @@
   width: 100%;
   height: 100%;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background-position 0.05s linear;
 }
 
 .character-sprite {
@@ -50,21 +51,21 @@
   justify-content: center;
 }
 
-/* Character Animation States */
+/* Remove CSS animations - sprite positioning handles animation */
 .kuih-character.wave {
-  animation: wave-animation 0.6s ease-in-out infinite;
+  /* Animation handled by sprite frame changes */
 }
 
 .kuih-character.eating {
-  animation: eating-animation 0.5s ease-in-out infinite;
+  /* Animation handled by sprite frame changes */
 }
 
 .kuih-character.idle {
-  animation: none;
+  /* Animation handled by sprite frame changes */
 }
 
 .kuih-character.clicked {
-  animation: click-bounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  /* Animation handled by sprite frame changes */
 }
 
 @keyframes wave-animation {
