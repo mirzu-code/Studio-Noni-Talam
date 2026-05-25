@@ -40,7 +40,21 @@ const Checkout = () => {
     }
   }, [location, navigate]);
 
-  if (!location.state || !location.state.selectedPackage) return null;
+  if (!location.state || !location.state.selectedPackage) return (
+    <div className="studio-page">
+      <section className="studio-hero" style={{ padding: '3rem 2rem' }}>
+        <h1 className="animate-fade-up" style={{ fontSize: '2.5rem' }}>Akses Ditolak</h1>
+      </section>
+      <div className="studio-container animate-fade-in" style={{ textAlign: 'center', padding: '3rem 2rem' }}>
+        <p style={{ fontSize: '1.2rem', color: '#64748b', marginBottom: '1.5rem' }}>
+          Anda perlu membuat tempahan terlebih dahulu untuk melihat resit.
+        </p>
+        <Link to="/" className="studio-btn">
+          Kembali ke Pejabat Utama
+        </Link>
+      </div>
+    </div>
+  );
 
   const { selectedPackage, bookingDate, bookingTime, customerName, customerPhone } = location.state;
   const pack = packages.find(p => p.id === selectedPackage);
