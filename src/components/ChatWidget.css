@@ -45,6 +45,20 @@
   display: block;
 }
 
+/* Simple CSS animations for scaled image fallback */
+.character-sprite.wave {
+  animation: wave-key 1s ease-in-out infinite;
+  transform-origin: 50% 60%;
+}
+
+.character-sprite.eating {
+  animation: eating-key 0.6s steps(2) infinite;
+}
+
+.character-sprite.clicked {
+  animation: click-bounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
 .fallback-icon {
   font-size: 2.5rem;
   align-items: center;
@@ -96,6 +110,40 @@
   100% {
     transform: scale(1) translateY(0);
   }
+}
+
+@keyframes wave-key {
+  0%, 100% { transform: rotate(-6deg) translateY(0); }
+  50% { transform: rotate(6deg) translateY(-4px); }
+}
+
+@keyframes eating-key {
+  0% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(2px) scaleY(0.96); }
+  100% { transform: translateY(0) scaleY(1); }
+}
+
+/* Sprite animation (step through horizontal frames) */
+.sprite-anim {
+  width: 100%;
+  height: 100%;
+  background-repeat: no-repeat;
+  background-size: calc(var(--frames, 1) * 100%) auto; /* scale full width by frames */
+  background-position: 0 0;
+  display: block;
+}
+
+.sprite-anim.wave,
+.sprite-anim.eating,
+.sprite-anim.idle,
+.sprite-anim.clicked {
+  /* compute duration from frames/fps: duration = frames / fps */
+  animation: play-sprite calc(var(--frames,1) / var(--fps,8) * 1s) steps(var(--frames,1)) infinite;
+}
+
+@keyframes play-sprite {
+  from { background-position: 0 0; }
+  to { background-position: 100% 0; }
 }
 
 /* Chat Window */

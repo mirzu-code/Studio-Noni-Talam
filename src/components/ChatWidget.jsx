@@ -9,6 +9,7 @@ const ChatWidget = () => {
   const [frameIndex, setFrameIndex] = useState(0);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
+  const [spriteUrl, setSpriteUrl] = useState('/kuih-character.jpg');
 
   // Sprite sheet frame configuration (x, y positions in pixels)
   const spriteFrames = {
@@ -70,6 +71,14 @@ const ChatWidget = () => {
       }
     ]);
   }, [location.pathname]);
+
+  // Prefer PNG (transparent) if present, fall back to JPG
+  useEffect(() => {
+    const tryPng = new Image();
+    tryPng.onload = () => setSpriteUrl('/kuih-character.png');
+    tryPng.onerror = () => setSpriteUrl('/kuih-character.jpg');
+    tryPng.src = '/kuih-character.png';
+  }, []);
 
   // Cycle through animations
   useEffect(() => {
@@ -146,25 +155,22 @@ const ChatWidget = () => {
     }, 1500);
   };
 
-  const currentFrame = spriteFrames[animationState]?.[frameIndex] || { x: 0, y: 0 };
+  const currentFrame = spriteFrames?.[animationState]?.[frameIndex] || null;
 
   return (
     <>
-      {/* Floating Chat Button - Animated Sprite Character */}
-      <div 
+      {/* Floating Chat Button - sprite animation (steps) */}
+      <div
         className="chat-widget-button"
         onClick={handleWidgetClick}
         title="Klik untuk membuka soalan & jawapan"
       >
-        <div 
-          className="kuih-character"
+        <div
+          className={`sprite-anim ${animationState}`}
           style={{
-            backgroundImage: 'url(/kuih-character.jpg)',
-            backgroundPosition: `${currentFrame.x}px ${currentFrame.y}px`,
-            backgroundRepeat: 'no-repeat',
-            backgroundSize: 'auto',
-            width: '100%',
-            height: '100%',
+            ['--frames']: spriteFrames[animationState]?.length || 1,
+            ['--fps']: 8,
+            backgroundImage: `url('${spriteUrl}')`
           }}
         />
       </div>
