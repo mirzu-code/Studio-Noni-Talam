@@ -31,8 +31,9 @@ const Admin = () => {
     setLoginError('');
     setLoadingLogin(true);
 
+    const normalizedEmail = email.trim().toLowerCase();
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
+      email: normalizedEmail,
       password,
     });
 
@@ -42,9 +43,9 @@ const Admin = () => {
       return;
     }
 
-    const userEmail = authData.user?.email;
+    const userEmail = authData.user?.email ?? authData.session?.user?.email;
     if (!userEmail) {
-      setLoginError('Email tidak dijumpai.');
+      setLoginError('Email tidak dijumpai dari sesi Supabase.');
       setLoadingLogin(false);
       return;
     }
@@ -52,11 +53,19 @@ const Admin = () => {
     const { data: adminData, error: adminError } = await supabase
       .from('admin_users')
       .select('role, full_name')
-      .eq('email', userEmail)
+      .ilike('email', userEmail)
       .single();
 
-    if (adminError || !adminData) {
-      setLoginError('Akaun ini tidak dibenarkan sebagai admin.');
+    if (adminError) {
+      console.error('admin_users query failed:', adminError);
+      setLoginError(adminError.message || 'Akaun admin tidak dapat diproses. Sila semak permissions dan admin_users.');
+      await supabase.auth.signOut();
+      setLoadingLogin(false);
+      return;
+    }
+
+    if (!adminData) {
+      setLoginError('Email ini belum dimasukkan ke dalam admin_users.');
       await supabase.auth.signOut();
       setLoadingLogin(false);
       return;
@@ -88,7 +97,7 @@ const Admin = () => {
       const { data: adminData, error: adminError } = await supabase
         .from('admin_users')
         .select('role, full_name')
-        .eq('email', userEmail)
+        .ilike('email', userEmail)
         .single();
 
       if (adminError || !adminData) {
