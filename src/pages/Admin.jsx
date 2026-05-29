@@ -50,11 +50,14 @@ const Admin = () => {
       return;
     }
 
+    console.log('Searching admin_users for email:', userEmail);
+    
     const { data: adminDataArray, error: adminError } = await supabase
       .from('admin_users')
-      .select('role, full_name')
-      .eq('email', userEmail)
-      .limit(1);
+      .select('*')
+      .ilike('email', userEmail);
+
+    console.log('admin_users query result:', { adminDataArray, adminError });
 
     if (adminError) {
       console.error('admin_users query failed:', adminError);
@@ -97,9 +100,8 @@ const Admin = () => {
 
       const { data: adminDataArray, error: adminError } = await supabase
         .from('admin_users')
-        .select('role, full_name')
-        .eq('email', userEmail)
-        .limit(1);
+        .select('*')
+        .ilike('email', userEmail);
 
       if (adminError || !adminDataArray?.length) {
         await supabase.auth.signOut();
