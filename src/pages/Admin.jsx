@@ -50,11 +50,11 @@ const Admin = () => {
       return;
     }
 
-    const { data: adminData, error: adminError } = await supabase
+    const { data: adminDataArray, error: adminError } = await supabase
       .from('admin_users')
       .select('role, full_name')
-      .ilike('email', userEmail)
-      .single();
+      .eq('email', userEmail)
+      .limit(1);
 
     if (adminError) {
       console.error('admin_users query failed:', adminError);
@@ -64,6 +64,7 @@ const Admin = () => {
       return;
     }
 
+    const adminData = adminDataArray?.[0];
     if (!adminData) {
       setLoginError('Email ini belum dimasukkan ke dalam admin_users.');
       await supabase.auth.signOut();
@@ -94,17 +95,18 @@ const Admin = () => {
       const userEmail = session.user?.email;
       if (!userEmail) return;
 
-      const { data: adminData, error: adminError } = await supabase
+      const { data: adminDataArray, error: adminError } = await supabase
         .from('admin_users')
         .select('role, full_name')
-        .ilike('email', userEmail)
-        .single();
+        .eq('email', userEmail)
+        .limit(1);
 
-      if (adminError || !adminData) {
+      if (adminError || !adminDataArray?.length) {
         await supabase.auth.signOut();
         return;
       }
 
+      const adminData = adminDataArray[0];
       setLoggedInUser({ email: userEmail, username: adminData.full_name || userEmail, role: adminData.role || 'Admin' });
     };
 
