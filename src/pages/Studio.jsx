@@ -12,6 +12,8 @@ const Studio = () => {
   const [bookingTime, setBookingTime] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [testimonialIndex, setTestimonialIndex] = useState(0);
 
   // Live Database Data
   const [existingBookings, setExistingBookings] = useState([]);
@@ -148,6 +150,11 @@ const Studio = () => {
     }
   };
 
+  const isValidPhone = (phone) => {
+    const cleaned = phone.replace(/[^0-9+]/g, '');
+    return /^(?:\+?60|0)1[0-9]{8,9}$/.test(cleaned);
+  };
+
   const MAX_PAX_PER_SLOT = 6;
 
   // Count total booked pax for a given date+time (excluding cancelled)
@@ -174,6 +181,11 @@ const Studio = () => {
     if (!selectedPackage || !bookingDate || !bookingTime) {
       return alert('Sila pilih pakej, tarikh, dan waktu untuk meneruskan.');
     }
+    if (!customerPhone || !isValidPhone(customerPhone)) {
+      setPhoneError('Sila masukkan nombor WhatsApp yang sah (contoh: 0123456789 atau +60123456789).');
+      return;
+    }
+    setPhoneError('');
     if (!canFitPackage(bookingTime)) {
       return alert(`Tidak cukup tempat untuk pakej ini. Sila pilih slot waktu yang lain.`);
     }
@@ -220,6 +232,20 @@ const Studio = () => {
   };
 
   const approvedTestimonials = testimonials.filter(t => t.status === 'approved');
+  const currentTestimonial = approvedTestimonials[testimonialIndex] || null;
+
+  useEffect(() => {
+    if (approvedTestimonials.length <= 1) {
+      setTestimonialIndex(0);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setTestimonialIndex((prev) => (prev + 1) % approvedTestimonials.length);
+    }, 6000);
+
+    return () => clearInterval(timer);
+  }, [approvedTestimonials.length]);
 
   return (
     <div className="studio-page">
@@ -314,7 +340,20 @@ const Studio = () => {
             </div>
             <div className="studio-form-group">
               <label className="studio-label">Nombor WhatsApp</label>
-              <input type="tel" className="studio-input" required placeholder="cth. 0123456789" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
+              <input
+                type="tel"
+                className="studio-input"
+                required
+                pattern="^(?:\\+?60|0)1[0-9]{8,9}$"
+                title="Sila masukkan nombor SAH, contohnya 0123456789 atau +60123456789"
+                placeholder="cth. 0123456789"
+                value={customerPhone}
+                onChange={(e) => {
+                  setCustomerPhone(e.target.value);
+                  if (phoneError) setPhoneError('');
+                }}
+              />
+              {phoneError && <p style={{ color: '#DC2626', marginTop: '0.5rem', fontSize: '0.9rem' }}>{phoneError}</p>}
             </div>
           </div>
 
@@ -333,12 +372,38 @@ const Studio = () => {
             {approvedTestimonials.length === 0 ? (
               <p style={{ textAlign: 'center', color: '#64748b' }}>Tiada testimoni lagi. Jadilah yang pertama berkongsi pengalaman anda!</p>
             ) : (
-              approvedTestimonials.map(t => (
-                <div key={t.id} style={{ background: '#F8FAFC', padding: '1.5rem', borderRadius: '8px', borderLeft: '4px solid #D4AF37' }}>
-                  <p style={{ fontStyle: 'italic', marginBottom: '1rem', color: '#334155' }}>"{t.text}"</p>
-                  <p style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#0F172A' }}>- {t.author} <span style={{ color: '#94A3B8', fontWeight: 'normal', marginLeft: '0.5rem' }}>{t.date}</span></p>
+              <>
+                <div key={currentTestimonial?.id || 'testimonial'} style={{ background: '#F8FAFC', padding: '1.5rem', borderRadius: '8px', borderLeft: '4px solid #D4AF37' }}>
+                  <p style={{ fontStyle: 'italic', marginBottom: '1rem', color: '#334155' }}>&ldquo;{currentTestimonial?.text}&rdquo;</p>
+                  <p style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#0F172A' }}>- {currentTestimonial?.author} <span style={{ color: '#94A3B8', fontWeight: 'normal', marginLeft: '0.5rem' }}>{currentTestimonial?.date}</span></p>
                 </div>
-              ))
+                {approvedTestimonials.length > 1 && (
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => setTestimonialIndex((prev) => (prev - 1 + approvedTestimonials.length) % approvedTestimonials.length)}
+                      style={{ padding: '0.5rem 0.9rem', borderRadius: '999px', border: '1px solid #CBD5E1', background: 'white', cursor: 'pointer' }}
+                    >
+                      Sebelumnya
+                    </button>
+                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                      {approvedTestimonials.map((_, idx) => (
+                        <span
+                          key={idx}
+                          style={{ width: '10px', height: '10px', borderRadius: '50%', background: testimonialIndex === idx ? '#0F172A' : '#CBD5E1' }}
+                        />
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setTestimonialIndex((prev) => (prev + 1) % approvedTestimonials.length)}
+                      style={{ padding: '0.5rem 0.9rem', borderRadius: '999px', border: '1px solid #CBD5E1', background: 'white', cursor: 'pointer' }}
+                    >
+                      Seterusnya
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

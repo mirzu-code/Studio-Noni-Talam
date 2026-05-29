@@ -17,11 +17,94 @@ const statusBadge = (status) => {
 
 const Admin = () => {
   const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loggedInUser, setLoggedInUser] = useState(null);
+  const [loginError, setLoginError] = useState('');
+  const [loadingLogin, setLoadingLogin] = useState(false);
   const [testimonials, setTestimonials] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [activeTab, setActiveTab] = useState('bookings');
 
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    setLoadingLogin(true);
+
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+
+    if (authError) {
+      setLoginError(authError.message || 'Gagal log masuk. Semak email dan kata laluan.');
+      setLoadingLogin(false);
+      return;
+    }
+
+    const userEmail = authData.user?.email;
+    if (!userEmail) {
+      setLoginError('Email tidak dijumpai.');
+      setLoadingLogin(false);
+      return;
+    }
+
+    const { data: adminData, error: adminError } = await supabase
+      .from('admin_users')
+      .select('role, full_name')
+      .eq('email', userEmail)
+      .single();
+
+    if (adminError || !adminData) {
+      setLoginError('Akaun ini tidak dibenarkan sebagai admin.');
+      await supabase.auth.signOut();
+      setLoadingLogin(false);
+      return;
+    }
+
+    setLoggedInUser({ email: userEmail, role: adminData.role || 'Admin', fullName: adminData.full_name || userEmail });
+    setEmail('');
+    setPassword('');
+    setLoadingLogin(false);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setLoggedInUser(null);
+    setBookings([]);
+    setTestimonials([]);
+    setActiveTab('bookings');
+  };
+
   useEffect(() => {
+    const restoreSession = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      const session = data?.session;
+      if (!session || error) return;
+
+      const userEmail = session.user?.email;
+      if (!userEmail) return;
+
+      const { data: adminData, error: adminError } = await supabase
+        .from('admin_users')
+        .select('role, full_name')
+        .eq('email', userEmail)
+        .single();
+
+      if (adminError || !adminData) {
+        await supabase.auth.signOut();
+        return;
+      }
+
+      setLoggedInUser({ email: userEmail, role: adminData.role || 'Admin', fullName: adminData.full_name || userEmail });
+    };
+
+    restoreSession();
+  }, []);
+
+  useEffect(() => {
+    if (!loggedInUser) return;
+
     const fetchData = async () => {
       try {
         const { data: bookingsData, error: bookingsError } = await supabase
@@ -98,7 +181,7 @@ const Admin = () => {
       supabase.removeChannel(bookingsChannel);
       supabase.removeChannel(testimonialsChannel);
     };
-  }, []);
+  }, [loggedInUser]);
 
   // ─── Testimonial Actions ───────────────────────────────────────────────────
   const handleApproveTestimonial = async (id) => {
@@ -152,6 +235,48 @@ const Admin = () => {
     }
   };
 
+  if (!loggedInUser) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC', padding: '2rem' }}>
+        <div style={{ width: '100%', maxWidth: '420px', background: 'white', borderRadius: '16px', boxShadow: '0 20px 60px rgba(15,23,42,0.1)', padding: '2rem' }}>
+          <h1 style={{ margin: 0, marginBottom: '0.75rem', color: '#0F172A' }}>Admin Login</h1>
+          <p style={{ margin: 0, marginBottom: '1.5rem', color: '#475569' }}>Masukkan nama pengguna dan kata laluan untuk mengakses dashboard.</p>
+          <form onSubmit={handleLogin}>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155' }}>Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="studio-input"
+                placeholder="admin@example.com"
+                required
+              />
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155' }}>Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="studio-input"
+                placeholder="password"
+                required
+              />
+            </div>
+            {loginError && <p style={{ color: '#DC2626', marginBottom: '1rem' }}>{loginError}</p>}
+            <button type="submit" className="studio-btn" style={{ width: '100%' }} disabled={loadingLogin}>
+              {loadingLogin ? 'Memproses...' : 'Log Masuk'}
+            </button>
+          </form>
+          <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#64748b' }}>
+            <p>Log masuk menggunakan email admin Supabase yang ada di jadual <strong>admin_users</strong>.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const pendingTestimonials  = testimonials.filter(t => t.status === 'pending');
   const approvedTestimonials = testimonials.filter(t => t.status === 'approved');
   const approvedBookings     = bookings.filter(b => b.status === 'approved');
@@ -175,10 +300,21 @@ const Admin = () => {
         <div>
           <h1 style={{ color: '#0F172A', fontFamily: '"Playfair Display", serif', margin: 0 }}>Admin Dashboard</h1>
           <p style={{ color: '#64748b', margin: '4px 0 0' }}>Studio Noni Talam Management Panel</p>
+          {loggedInUser && (
+            <>
+              <p style={{ margin: '0.5rem 0 0', color: '#475569' }}><strong>{loggedInUser.username}</strong> logged in as <strong>{loggedInUser.role}</strong></p>
+              <p style={{ margin: '0.5rem 0 0', color: '#0F172A', fontWeight: 700 }}>Welcome, {loggedInUser.role}!</p>
+            </>
+          )}
         </div>
-        <button onClick={() => navigate('/')} style={{ padding: '0.6rem 1.2rem', background: '#0F172A', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-          ← Back to Site
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <button onClick={handleLogout} style={{ padding: '0.6rem 1.2rem', background: '#DC2626', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+            Log Out
+          </button>
+          <button onClick={() => navigate('/')} style={{ padding: '0.6rem 1.2rem', background: '#0F172A', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+            ← Back to Site
+          </button>
+        </div>
       </div>
 
       {/* Stats Row */}
