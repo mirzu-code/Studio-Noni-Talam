@@ -62,7 +62,7 @@ const Admin = () => {
       return;
     }
 
-    setLoggedInUser({ email: userEmail, role: adminData.role || 'Admin', fullName: adminData.full_name || userEmail });
+    setLoggedInUser({ email: userEmail, username: adminData.full_name || userEmail, role: adminData.role || 'Admin' });
     setEmail('');
     setPassword('');
     setLoadingLogin(false);
@@ -96,7 +96,7 @@ const Admin = () => {
         return;
       }
 
-      setLoggedInUser({ email: userEmail, role: adminData.role || 'Admin', fullName: adminData.full_name || userEmail });
+      setLoggedInUser({ email: userEmail, username: adminData.full_name || userEmail, role: adminData.role || 'Admin' });
     };
 
     restoreSession();
