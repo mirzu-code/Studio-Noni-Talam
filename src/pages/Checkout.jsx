@@ -102,48 +102,44 @@ const Checkout = () => {
       status: 'approved',
     };
 
-    // Retry insert (max 3 attempts) and request the inserted row
-    let insertedRows = null;
+    // Retry insert (max 3 attempts) and request the inserted record
+    let savedBooking = null;
     for (let attempt = 0; attempt < 3; attempt++) {
-      console.log(`Attempt ${attempt + 1} inserting booking:`, newBooking);
-      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-      console.log('Supabase Key exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
       try {
         const { data, error } = await supabase
           .from('bookings')
           .insert([newBooking])
-          .select(); // ask Supabase to return the inserted record
+          .select('*')
+          .single();
 
-        if (!error && data && data.length > 0) {
-          insertedRows = data;
+        if (!error && data) {
+          savedBooking = data;
           break;
         }
 
         console.error('Insert error:', error);
         // Duplicate key – generate a new orderId and retry
-        if (error?.message?.includes('duplicate key')) {
+        if (error?.message?.toLowerCase().includes('duplicate key')) {
           newBooking.orderId = generateOrderId();
           continue;
         }
-        // Any other error – abort
+
         alert(`Failed to save booking: ${error?.message || error}`);
         setIsProcessing(false);
         return;
       } catch (err) {
         console.error('Catch block error:', err);
-        alert(`Failed to save booking: ${err.message}`);
+        alert(`Failed to save booking: ${err?.message || err}`);
         setIsProcessing(false);
         return;
       }
     }
 
-    if (!insertedRows) {
+    if (!savedBooking) {
       alert('Failed to save booking after multiple attempts.');
       setIsProcessing(false);
       return;
     }
-
-    const savedBooking = insertedRows[0];
     // Send email to admin only after a successful insert
     const emailParams = {
       to_email: 'ammarizzu14@gmail.com',

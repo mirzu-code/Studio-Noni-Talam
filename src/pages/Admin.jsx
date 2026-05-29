@@ -239,8 +239,8 @@ const Admin = () => {
                             <div style={{ fontWeight: 'bold' }}>{b.bookingDate}</div>
                             <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{b.bookingTime}</div>
                           </td>
-                          <td style={{ padding: '0.8rem' }}>{b.package?.title} ({b.package?.pax} pax)</td>
-                          <td style={{ padding: '0.8rem', fontWeight: 'bold', color: '#047857' }}>RM {b.total?.toFixed(2)}</td>
+                          <td style={{ padding: '0.8rem' }}>{(b.package?.title || b.packageTitle) ?? 'Unknown package'} ({b.package?.pax ?? b.packagePax ?? 'N/A'} pax)</td>
+                          <td style={{ padding: '0.8rem', fontWeight: 'bold', color: '#047857' }}>RM {(typeof b.total === 'number' ? b.total.toFixed(2) : b.total)}</td>
                           <td style={{ padding: '0.8rem' }}>{statusBadge(b.status || 'approved')}</td>
                           <td style={{ padding: '0.8rem' }}>
                             <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>

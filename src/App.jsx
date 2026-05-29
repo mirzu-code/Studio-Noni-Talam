@@ -5,14 +5,12 @@ import Checkout from './pages/Checkout';
 import Admin from './pages/Admin';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
-import ChatWidget from './components/ChatWidget';
 
 
 function App() {
   return (
     <Router>
       <ScrollToTop />
-      <ChatWidget />
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#F8FAFC' }}>
         <main style={{ flex: 1 }}>
           <Routes>
