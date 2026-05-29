@@ -57,7 +57,9 @@ const Admin = () => {
       .select('*')
       .ilike('email', userEmail);
 
-    console.log('admin_users query result:', { adminDataArray, adminError });
+    console.log('admin_users query result - array:', adminDataArray);
+    console.log('admin_users query result - error:', adminError);
+    console.log('admin_users array length:', adminDataArray?.length);
 
     if (adminError) {
       console.error('admin_users query failed:', adminError);
