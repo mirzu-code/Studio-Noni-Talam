@@ -51,6 +51,13 @@ const Admin = () => {
     }
 
     console.log('Searching admin_users for email:', userEmail);
+    console.log('Email length:', userEmail?.length);
+    
+    // Debug: get ALL admin_users to see what's there
+    const { data: allAdmins } = await supabase
+      .from('admin_users')
+      .select('*');
+    console.log('All admin_users in DB:', allAdmins);
     
     const { data: adminDataArray, error: adminError } = await supabase
       .from('admin_users')
