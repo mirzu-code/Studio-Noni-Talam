@@ -220,7 +220,7 @@ const Checkout = () => {
                     <>
                       <h3 style={{ color: '#E11D48', marginBottom: '1rem' }}>DUITNOW QR</h3>
                       <p>Imbas kod QR di bawah untuk melengkapkan pembayaran anda.</p>
-                      <img src="/qr-code.jpg" alt="QR Code" style={{ width: '200px', margin: '1rem auto', borderRadius: '8px', border: '4px solid white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} />
+                      <img src="gambar qr.jpg" alt="QR Code" style={{ width: '200px', margin: '1rem auto', borderRadius: '8px', border: '4px solid white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} />
                       <p style={{ fontSize: '0.9rem', color: '#64748b' }}>Rujukan: STUDIO KUIH TALAM</p>
                     </>
                   )}
