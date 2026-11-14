@@ -56,49 +56,77 @@ const Checkout = () => {
     </div>
   );
 
-  const { selectedPackage, bookingDate, bookingTime, customerName, customerPhone } = location.state;
-  const pack = packages.find(p => p.id === selectedPackage);
+  const { selectedPackage, bookingPackageObj, orderType, bookingDate, bookingTime, customerName, customerPhone, totalAmount } = location.state;
+  
+  // Either use custom passed package object (e.g. from OrderKuih) or lookup by ID (from Studio)
+  const pack = bookingPackageObj || packages.find(p => p.id === selectedPackage) || {
+    title: typeof selectedPackage === 'string' ? selectedPackage : `Pakej #${selectedPackage}`,
+    pax: '1',
+    price: totalAmount || 0,
+    icon: '🧁'
+  };
+
+  const isKuihOrder = orderType === 'kuih_order' || pack.orderType === 'kuih_order';
+  const orderPrice = typeof pack.price === 'number' ? pack.price : (totalAmount || 0);
 
   const generateWhatsAppMessage = (orderId) => {
-    let message = `*NEW STUDIO BOOKING: ${orderId}*\n\n`;
+    let message = isKuihOrder 
+      ? `*TEMPAHAN KUIH TALAM SIAP: ${orderId}*\n\n`
+      : `*NEW STUDIO BOOKING: ${orderId}*\n\n`;
+
     message += `*Customer Details:*\n`;
     message += `Name: ${customerName}\n`;
     message += `Phone: ${customerPhone}\n\n`;
     
-    message += `*Booking Details:*\n`;
-    message += `Package: ${pack.title} (${pack.pax} Person)\n`;
-    message += `Date: ${bookingDate}\n`;
-    message += `Time: ${bookingTime}\n\n`;
+    if (isKuihOrder) {
+      message += `*Butiran Kuih:*\n`;
+      message += `Kuih & Saiz: ${pack.title}\n`;
+      message += `Kuantiti: ${pack.quantity || 1} Loyang/Set\n`;
+      message += `Kaedah: ${pack.deliveryMethod === 'delivery' ? 'Penghantaran' : 'Ambil Sendiri'}\n`;
+      if (pack.deliveryAddress) {
+        message += `Alamat: ${pack.deliveryAddress}\n`;
+      }
+      if (pack.notes) {
+        message += `Nota Khas: ${pack.notes}\n`;
+      }
+      message += `Tarikh Siap: ${bookingDate}\n`;
+      message += `Masa Siap: ${bookingTime}\n\n`;
+    } else {
+      message += `*Booking Details:*\n`;
+      message += `Package: ${pack.title} (${pack.pax} Person)\n`;
+      message += `Date: ${bookingDate}\n`;
+      message += `Time: ${bookingTime}\n\n`;
+    }
 
     message += `*Payment Details:*\n`;
     message += `Method: ${paymentMethod.toUpperCase()}\n`;
-    message += `Total: RM ${pack.price.toFixed(2)}\n\n`;
+    message += `Total: RM ${orderPrice.toFixed(2)}\n\n`;
     
     message += `_Sila semak resit bayaran sekiranya pelanggan menggunakan QR Pay / Bank Transfer / E-Wallet._`;
 
     return encodeURIComponent(message);
   };
 
-    // Generate a unique order ID using UUID to avoid duplicate-key errors
-    const generateOrderId = () => {
-      // UUID is virtually guaranteed to be unique
-      return `STD-${crypto.randomUUID()}`;
-    };
+  // Generate a unique order ID using UUID
+  const generateOrderId = () => {
+    const prefix = isKuihOrder ? 'KUIH' : 'STD';
+    return `${prefix}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+  };
 
-    const handleCompletePayment = async () => {
+  const handleCompletePayment = async () => {
     setIsProcessing(true);
-    // Generate a unique orderId
     let orderId = generateOrderId();
     const newBooking = {
       orderId,
       date: new Date().toLocaleString(),
       package: pack,
+      orderType: isKuihOrder ? 'kuih_order' : 'studio_booking',
       bookingDate,
       bookingTime,
       customerName,
       customerPhone,
       paymentMethod: paymentMethod.toUpperCase(),
-      total: pack.price,
+      total: orderPrice,
       status: 'approved',
     };
 
@@ -202,7 +230,7 @@ const Checkout = () => {
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
               <h2 className="studio-section-title">Lengkapkan Pembayaran Anda</h2>
               <p style={{ fontSize: '1.2rem', color: '#475569' }}>
-                Jumlah Total: <strong style={{ color: '#059669', fontSize: '1.5rem' }}>RM {pack.price.toFixed(2)}</strong>
+                Jumlah Total: <strong style={{ color: '#059669', fontSize: '1.5rem' }}>RM {orderPrice.toFixed(2)}</strong>
               </p>
             </div>
 
@@ -284,23 +312,37 @@ const Checkout = () => {
                 </div>
               </div>
 
-              <h3 style={{ borderBottom: '2px solid #E2E8F0', paddingBottom: '0.5rem', marginBottom: '1rem' }}>Butiran Sesi</h3>
+              <h3 style={{ borderBottom: '2px solid #E2E8F0', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+                {receiptData.orderType === 'kuih_order' || receiptData.package?.orderType === 'kuih_order' ? 'Butiran Tempahan Kuih' : 'Butiran Sesi Studio'}
+              </h3>
               <div className="receipt-row">
-                <span>Pakej Kelas:</span>
-                <strong>{receiptData.package.title} ({receiptData.package.pax} Orang)</strong>
+                <span>{receiptData.orderType === 'kuih_order' || receiptData.package?.orderType === 'kuih_order' ? 'Kuih & Saiz:' : 'Pakej Kelas:'}</span>
+                <strong>{receiptData.package?.title} {receiptData.package?.quantity ? `x ${receiptData.package.quantity}` : `(${receiptData.package?.pax} Orang)`}</strong>
               </div>
               <div className="receipt-row">
-                <span>Tarikh Sesi:</span>
+                <span>{receiptData.orderType === 'kuih_order' || receiptData.package?.orderType === 'kuih_order' ? 'Tarikh Pengambilan:' : 'Tarikh Sesi:'}</span>
                 <strong>{receiptData.bookingDate}</strong>
               </div>
               <div className="receipt-row">
-                <span>Waktu Sesi:</span>
+                <span>{receiptData.orderType === 'kuih_order' || receiptData.package?.orderType === 'kuih_order' ? 'Waktu Pengambilan:' : 'Waktu Sesi:'}</span>
                 <strong>{receiptData.bookingTime}</strong>
               </div>
               <div className="receipt-row">
                 <span>Nama Pelanggan:</span>
                 <strong>{receiptData.customerName}</strong>
               </div>
+              {receiptData.package?.deliveryMethod && (
+                <div className="receipt-row">
+                  <span>Kaedah Terima:</span>
+                  <strong>{receiptData.package.deliveryMethod === 'delivery' ? 'Penghantaran Rider' : 'Ambil Sendiri'}</strong>
+                </div>
+              )}
+              {receiptData.package?.deliveryAddress && (
+                <div className="receipt-row">
+                  <span>Alamat / Lokasi:</span>
+                  <span style={{ maxWidth: '60%', textAlign: 'right', fontSize: '0.88rem' }}>{receiptData.package.deliveryAddress}</span>
+                </div>
+              )}
 
               <div className="receipt-total">
                 <span>Jumlah Dibayar</span>

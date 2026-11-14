@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Studio from './pages/Studio';
+import OrderKuih from './pages/OrderKuih';
 import Product from './pages/Product';
 import Learn from './pages/Learn';
 import Checkout from './pages/Checkout';
@@ -18,6 +19,7 @@ function App() {
         <main style={{ flex: 1 }}>
           <Routes>
             <Route path="/" element={<Studio />} />
+            <Route path="/tempah-kuih" element={<OrderKuih />} />
             <Route path="/product" element={<Product />} />
             <Route path="/learn" element={<Learn />} />
             <Route path="/checkout" element={<Checkout />} />

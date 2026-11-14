@@ -8,6 +8,7 @@ const Navbar = () => {
 
   const navLinks = [
     { path: '/', label: 'Studio', badge: 'Bengkel' },
+    { path: '/tempah-kuih', label: 'Tempah Kuih', badge: 'Siap Loyang' },
     { path: '/product', label: 'Product', badge: 'TikTok Shop' },
     { path: '/learn', label: 'Learn', badge: 'Video & Game' },
     { path: '/admin', label: 'Admin', badge: 'Portal' }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
+import { DEFAULT_KUIH_LIST } from './OrderKuih';
 
 const statusBadge = (status) => {
   const styles = {
@@ -24,7 +25,10 @@ const Admin = () => {
   const [loadingLogin, setLoadingLogin] = useState(false);
   const [testimonials, setTestimonials] = useState([]);
   const [bookings, setBookings] = useState([]);
-  const [activeTab, setActiveTab] = useState('bookings'); // 'bookings' | 'testimonials' | 'pages'
+  const [activeTab, setActiveTab] = useState('bookings'); // 'bookings' | 'kuih_catalog' | 'testimonials' | 'pages'
+  const [orderFilter, setOrderFilter] = useState('all'); // 'all' | 'kuih' | 'studio'
+  const [kuihCatalog, setKuihCatalog] = useState(DEFAULT_KUIH_LIST);
+  const [savingCatalog, setSavingCatalog] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -142,6 +146,13 @@ const Admin = () => {
         if (!testimonialsError && testimonialsData) {
           setTestimonials(testimonialsData);
         }
+
+        const { data: catalogData, error: catalogError } = await supabase
+          .from('kuih_catalog')
+          .select('*');
+        if (!catalogError && catalogData && catalogData.length > 0) {
+          setKuihCatalog(catalogData);
+        }
       } catch (err) {
         console.error('Error fetching initial admin data:', err);
       }
@@ -244,16 +255,50 @@ const Admin = () => {
       console.error('Error updating booking status:', err);
     }
   };
-  const deleteBooking = async (orderId) => {
+  // ─── Kuih Catalog Availability Toggle ──────────────────────────────────────
+  const toggleKuihAvailability = async (kuihId) => {
+    setSavingCatalog(true);
+    const updated = kuihCatalog.map(k => {
+      if (k.id === kuihId) {
+        return { ...k, available: k.available === false ? true : false };
+      }
+      return k;
+    });
+    setKuihCatalog(updated);
+
     try {
-      const { error } = await supabase
-        .from('bookings')
-        .delete()
-        .eq('orderId', orderId);
-      if (error) throw error;
-      setBookings(prev => prev.filter(b => b.orderId !== orderId));
+      const item = updated.find(k => k.id === kuihId);
+      // Try to upsert into supabase kuih_catalog table
+      await supabase
+        .from('kuih_catalog')
+        .upsert({ id: item.id, name: item.name, available: item.available, prices: item.prices, category: item.category }, { onConflict: 'id' });
     } catch (err) {
-      console.error('Error deleting booking:', err);
+      console.log('Catalog update offline/fallback:', err);
+    } finally {
+      setSavingCatalog(false);
+    }
+  };
+
+  const updateKuihPrice = async (kuihId, sizeKey, newPrice) => {
+    const val = parseFloat(newPrice);
+    if (isNaN(val)) return;
+
+    const updated = kuihCatalog.map(k => {
+      if (k.id === kuihId) {
+        const newPrices = { ...(k.prices || {}), [sizeKey]: val };
+        return { ...k, prices: newPrices, defaultPrice: sizeKey === '8x8' ? val : k.defaultPrice };
+      }
+      return k;
+    });
+    setKuihCatalog(updated);
+
+    try {
+      const item = updated.find(k => k.id === kuihId);
+      await supabase
+        .from('kuih_catalog')
+        .upsert({ id: item.id, prices: item.prices, defaultPrice: item.defaultPrice }, { onConflict: 'id' });
+    } catch (err) {
+      console.log('Price update fallback:', err);
     }
   };
 
@@ -303,6 +348,14 @@ const Admin = () => {
   const approvedTestimonials = testimonials.filter(t => t.status === 'approved');
   const approvedBookings     = bookings.filter(b => b.status === 'approved');
   const cancelledBookings    = bookings.filter(b => b.status === 'cancelled');
+  const kuihOrders           = bookings.filter(b => b.orderType === 'kuih_order' || b.package?.orderType === 'kuih_order' || (b.orderId && b.orderId.startsWith('KUIH-')));
+  const studioBookings       = bookings.filter(b => !kuihOrders.includes(b));
+
+  const filteredBookings = orderFilter === 'kuih' 
+    ? kuihOrders 
+    : orderFilter === 'studio' 
+    ? studioBookings 
+    : bookings;
 
   const tabStyle = (tab) => ({
     padding: '0.6rem 1.5rem',
@@ -342,22 +395,27 @@ const Admin = () => {
       {/* Stats Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         {[
-          { label: 'Total Bookings', value: bookings.length,       color: '#0F172A' },
-          { label: 'Confirmed',      value: approvedBookings.length,  color: '#047857' },
-          { label: 'Cancelled',      value: cancelledBookings.length, color: '#DC2626' },
+          { label: 'Semua Tempahan', value: bookings.length,         color: '#0F172A' },
+          { label: 'Tempah Kuih Siap', value: kuihOrders.length,     color: '#B45309' },
+          { label: 'Slot Bengkel Studio', value: studioBookings.length, color: '#2563EB' },
+          { label: 'Disahkan',       value: approvedBookings.length, color: '#047857' },
+          { label: 'Dibatalkan',     value: cancelledBookings.length,color: '#DC2626' },
         ].map(s => (
           <div key={s.label} style={{ background: 'white', borderRadius: '8px', padding: '1.2rem', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-            <div style={{ fontSize: '2rem', fontWeight: '800', color: s.color }}>{s.value}</div>
-            <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>{s.label}</div>
+            <div style={{ fontSize: '1.8rem', fontWeight: '800', color: s.color }}>{s.value}</div>
+            <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '4px' }}>{s.label}</div>
           </div>
         ))}
       </div>
 
       {/* Tabs */}
       <div style={{ background: 'white', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-        <div style={{ display: 'flex', borderBottom: '1px solid #E2E8F0', padding: '0 1rem' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid #E2E8F0', padding: '0 1rem', flexWrap: 'wrap' }}>
           <button style={tabStyle('bookings')} onClick={() => setActiveTab('bookings')}>
-            Bookings
+            📋 Senarai Tempahan ({bookings.length})
+          </button>
+          <button style={tabStyle('kuih_catalog')} onClick={() => setActiveTab('kuih_catalog')}>
+            🧁 Kawalan Menu & Harga Kuih
           </button>
           <button style={tabStyle('testimonials')} onClick={() => setActiveTab('testimonials')}>
             Testimonials {pendingTestimonials.length > 0 && <span style={{ background: '#EF4444', color: 'white', borderRadius: '50%', padding: '1px 6px', fontSize: '0.7rem', marginLeft: '6px' }}>{pendingTestimonials.length}</span>}
@@ -372,62 +430,236 @@ const Admin = () => {
           {/* ── BOOKINGS TAB ── */}
           {activeTab === 'bookings' && (
             <div>
-              {bookings.length === 0 ? (
-                <p style={{ color: '#64748b', textAlign: 'center', padding: '2rem 0' }}>No bookings yet.</p>
+              {/* Order Type Filter Pills */}
+              <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '1.25rem', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#475569' }}>Tapis Pesanan:</span>
+                <button
+                  onClick={() => setOrderFilter('all')}
+                  style={{
+                    padding: '0.35rem 0.8rem',
+                    borderRadius: '20px',
+                    border: '1px solid #CBD5E1',
+                    background: orderFilter === 'all' ? '#0F172A' : 'white',
+                    color: orderFilter === 'all' ? 'white' : '#475569',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    fontWeight: 600
+                  }}
+                >
+                  Semua ({bookings.length})
+                </button>
+                <button
+                  onClick={() => setOrderFilter('kuih')}
+                  style={{
+                    padding: '0.35rem 0.8rem',
+                    borderRadius: '20px',
+                    border: '1px solid #F59E0B',
+                    background: orderFilter === 'kuih' ? '#F59E0B' : 'white',
+                    color: orderFilter === 'kuih' ? 'white' : '#B45309',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    fontWeight: 600
+                  }}
+                >
+                  🧁 Tempah Kuih Siap ({kuihOrders.length})
+                </button>
+                <button
+                  onClick={() => setOrderFilter('studio')}
+                  style={{
+                    padding: '0.35rem 0.8rem',
+                    borderRadius: '20px',
+                    border: '1px solid #2563EB',
+                    background: orderFilter === 'studio' ? '#2563EB' : 'white',
+                    color: orderFilter === 'studio' ? 'white' : '#1E40AF',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    fontWeight: 600
+                  }}
+                >
+                  🏛️ Slot Bengkel Studio ({studioBookings.length})
+                </button>
+              </div>
+
+              {filteredBookings.length === 0 ? (
+                <p style={{ color: '#64748b', textAlign: 'center', padding: '2rem 0' }}>Tiada pesanan dijumpai untuk kategori ini.</p>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
                     <thead>
                       <tr style={{ background: '#F1F5F9', textAlign: 'left' }}>
-                        <th style={{ padding: '0.8rem', borderBottom: '2px solid #CBD5E1' }}>Order ID</th>
+                        <th style={{ padding: '0.8rem', borderBottom: '2px solid #CBD5E1' }}>Order ID & Jenis</th>
                         <th style={{ padding: '0.8rem', borderBottom: '2px solid #CBD5E1' }}>Customer</th>
-                        <th style={{ padding: '0.8rem', borderBottom: '2px solid #CBD5E1' }}>Session</th>
-                        <th style={{ padding: '0.8rem', borderBottom: '2px solid #CBD5E1' }}>Package</th>
+                        <th style={{ padding: '0.8rem', borderBottom: '2px solid #CBD5E1' }}>Tarikh & Masa</th>
+                        <th style={{ padding: '0.8rem', borderBottom: '2px solid #CBD5E1' }}>Item / Pakej</th>
                         <th style={{ padding: '0.8rem', borderBottom: '2px solid #CBD5E1' }}>Total</th>
                         <th style={{ padding: '0.8rem', borderBottom: '2px solid #CBD5E1' }}>Status</th>
                         <th style={{ padding: '0.8rem', borderBottom: '2px solid #CBD5E1' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {bookings.map((b) => (
-                        <tr key={b.orderId} style={{ borderBottom: '1px solid #E2E8F0' }}>
-                          <td style={{ padding: '0.8rem', fontWeight: 'bold', fontSize: '0.8rem', color: '#64748b' }}>{b.orderId}</td>
-                          <td style={{ padding: '0.8rem' }}>
-                            <div style={{ fontWeight: 'bold' }}>{b.customerName}</div>
-                            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{b.customerPhone}</div>
-                          </td>
-                          <td style={{ padding: '0.8rem' }}>
-                            <div style={{ fontWeight: 'bold' }}>{b.bookingDate}</div>
-                            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{b.bookingTime}</div>
-                          </td>
-                          <td style={{ padding: '0.8rem' }}>{(b.package?.title || b.packageTitle) ?? 'Unknown package'} ({b.package?.pax ?? b.packagePax ?? 'N/A'} pax)</td>
-                          <td style={{ padding: '0.8rem', fontWeight: 'bold', color: '#047857' }}>RM {(typeof b.total === 'number' ? b.total.toFixed(2) : b.total)}</td>
-                          <td style={{ padding: '0.8rem' }}>{statusBadge(b.status || 'approved')}</td>
-                          <td style={{ padding: '0.8rem' }}>
-                            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                              {b.status !== 'cancelled' ? (
-                                <button onClick={() => updateBookingStatus(b.orderId, 'cancelled')}
-                                  style={{ background: '#EF4444', color: 'white', border: 'none', padding: '0.3rem 0.7rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>
-                                  ✗ Cancel Order
-                                </button>
-                              ) : (
-                                <button onClick={() => updateBookingStatus(b.orderId, 'approved')}
-                                  style={{ background: '#10B981', color: 'white', border: 'none', padding: '0.3rem 0.7rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>
-                                  ↩ Restore
-                                </button>
+                      {filteredBookings.map((b) => {
+                        const isThisKuih = b.orderType === 'kuih_order' || b.package?.orderType === 'kuih_order' || (b.orderId && b.orderId.startsWith('KUIH-'));
+                        return (
+                          <tr key={b.orderId} style={{ borderBottom: '1px solid #E2E8F0' }}>
+                            <td style={{ padding: '0.8rem' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '0.82rem', color: '#0F172A' }}>{b.orderId}</div>
+                              <span style={{
+                                fontSize: '0.7rem',
+                                padding: '1px 6px',
+                                borderRadius: '4px',
+                                fontWeight: 700,
+                                background: isThisKuih ? '#FEF3C7' : '#EFF6FF',
+                                color: isThisKuih ? '#92400E' : '#1D4ED8',
+                                display: 'inline-block',
+                                marginTop: '3px'
+                              }}>
+                                {isThisKuih ? '🧁 Kuih Siap' : '🏛️ Bengkel'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '0.8rem' }}>
+                              <div style={{ fontWeight: 'bold' }}>{b.customerName}</div>
+                              <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{b.customerPhone}</div>
+                              {b.package?.deliveryAddress && (
+                                <div style={{ fontSize: '0.72rem', color: '#059669', marginTop: '2px' }}>
+                                  📍 {b.package.deliveryAddress.slice(0, 30)}...
+                                </div>
                               )}
-                              <button onClick={() => deleteBooking(b.orderId)}
-                                style={{ background: '#94A3B8', color: 'white', border: 'none', padding: '0.3rem 0.7rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}>
-                                Delete
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td style={{ padding: '0.8rem' }}>
+                              <div style={{ fontWeight: 'bold' }}>{b.bookingDate}</div>
+                              <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{b.bookingTime}</div>
+                            </td>
+                            <td style={{ padding: '0.8rem' }}>
+                              <div style={{ fontWeight: 600 }}>{(b.package?.title || b.packageTitle) ?? 'Unknown item'}</div>
+                              {b.package?.notes && (
+                                <div style={{ fontSize: '0.72rem', color: '#92400E', fontStyle: 'italic', marginTop: '2px' }}>
+                                  Nota: "{b.package.notes}"
+                                </div>
+                              )}
+                            </td>
+                            <td style={{ padding: '0.8rem', fontWeight: 'bold', color: '#047857' }}>RM {(typeof b.total === 'number' ? b.total.toFixed(2) : b.total)}</td>
+                            <td style={{ padding: '0.8rem' }}>{statusBadge(b.status || 'approved')}</td>
+                            <td style={{ padding: '0.8rem' }}>
+                              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                {b.status !== 'cancelled' ? (
+                                  <button onClick={() => updateBookingStatus(b.orderId, 'cancelled')}
+                                    style={{ background: '#EF4444', color: 'white', border: 'none', padding: '0.3rem 0.6rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                    ✗ Batal
+                                  </button>
+                                ) : (
+                                  <button onClick={() => updateBookingStatus(b.orderId, 'approved')}
+                                    style={{ background: '#10B981', color: 'white', border: 'none', padding: '0.3rem 0.6rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                    ↩ Sahkan
+                                  </button>
+                                )}
+                                <button onClick={() => deleteBooking(b.orderId)}
+                                  style={{ background: '#94A3B8', color: 'white', border: 'none', padding: '0.3rem 0.6rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>
+                                  Padam
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ── KUIH CATALOG & AVAILABILITY TAB ── */}
+          {activeTab === 'kuih_catalog' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <h3 style={{ color: '#0F172A', margin: 0, fontSize: '1.3rem' }}>Kawalan Ketersediaan (Availability) & Harga Saiz Kuih</h3>
+                  <p style={{ color: '#64748B', fontSize: '0.9rem', margin: '4px 0 0' }}>
+                    Tukar status 'Tersedia' / 'Habis (Sold Out)' dan kemas kini harga mengikut saiz 8x8, 9x9, dan 10x10 secara langsung.
+                  </p>
+                </div>
+                {savingCatalog && <span style={{ color: '#047857', fontWeight: 600, fontSize: '0.85rem' }}>🔄 Mengemas kini...</span>}
+              </div>
+
+              <div style={{ display: 'grid', gap: '1.25rem' }}>
+                {kuihCatalog.map((k) => {
+                  const isAvail = k.available !== false;
+                  return (
+                    <div
+                      key={k.id}
+                      style={{
+                        background: isAvail ? 'white' : '#FFF1F2',
+                        border: isAvail ? '1px solid #E2E8F0' : '1px solid #FECDD3',
+                        borderRadius: '12px',
+                        padding: '1.25rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '1rem'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: '260px' }}>
+                        <img
+                          src={k.image}
+                          alt={k.name}
+                          style={{ width: '60px', height: '60px', borderRadius: '8px', objectFit: 'cover' }}
+                        />
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <h4 style={{ margin: 0, color: '#0F172A', fontSize: '1.05rem' }}>{k.name}</h4>
+                            <span style={{ fontSize: '0.7rem', padding: '2px 6px', background: '#F1F5F9', borderRadius: '4px', color: '#475569' }}>{k.category}</span>
+                          </div>
+                          <p style={{ margin: '3px 0 0', fontSize: '0.8rem', color: '#64748B' }}>
+                            Status: <strong style={{ color: isAvail ? '#047857' : '#DC2626' }}>{isAvail ? '🟢 Buka Tempahan' : '🔴 Tutup / Habis'}</strong>
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Size Price Editors */}
+                      {k.hasSizeOptions ? (
+                        <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>Harga (RM):</span>
+                          {['8x8', '9x9', '10x10'].map(sz => (
+                            <div key={sz} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: '#F8FAFC', padding: '0.3rem 0.5rem', borderRadius: '6px', border: '1px solid #CBD5E1' }}>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0F172A' }}>{sz}:</span>
+                              <input
+                                type="number"
+                                defaultValue={k.prices?.[sz] || ''}
+                                onBlur={(e) => updateKuihPrice(k.id, sz, e.target.value)}
+                                style={{ width: '50px', padding: '2px 4px', border: '1px solid #94A3B8', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 600 }}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '0.85rem', color: '#64748B' }}>
+                          Harga Standard: <strong>RM {k.defaultPrice || 45}</strong>
+                        </div>
+                      )}
+
+                      {/* Availability Toggle Button */}
+                      <div>
+                        <button
+                          onClick={() => toggleKuihAvailability(k.id)}
+                          style={{
+                            background: isAvail ? '#EF4444' : '#10B981',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0.55rem 1.1rem',
+                            borderRadius: '8px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            fontSize: '0.85rem'
+                          }}
+                        >
+                          {isAvail ? 'Tandakan HABIS' : 'Buka SEMULA'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -481,7 +713,7 @@ const Admin = () => {
                     <span style={{ fontSize: '1.5rem' }}>🏛️</span>
                     <span style={{ background: '#ECFDF5', color: '#047857', fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '12px' }}>AKTIF</span>
                   </div>
-                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#0F172A', fontSize: '1.1rem' }}>1. Studio Page (Tempahan)</h4>
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#0F172A', fontSize: '1.1rem' }}>1. Studio Page (Bengkel)</h4>
                   <p style={{ color: '#64748B', fontSize: '0.85rem', lineHeight: '1.5', margin: '0 0 1rem 0' }}>
                     Pakej bengkel, pemilihan tarikh & slot masa, pendaftaran borang murid, dan integrasi bayaran.
                   </p>
@@ -489,6 +721,24 @@ const Admin = () => {
                     <span style={{ fontSize: '0.8rem', color: '#64748B' }}>Route: <code>/</code></span>
                     <button onClick={() => navigate('/')} style={{ background: '#047857', color: 'white', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600 }}>
                       Buka Studio ↗
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Order Kuih Siap Info */}
+                <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                    <span style={{ fontSize: '1.5rem' }}>🧁</span>
+                    <span style={{ background: '#FEF3C7', color: '#B45309', fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '12px' }}>TEMPAH KUIH</span>
+                  </div>
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#0F172A', fontSize: '1.1rem' }}>2. Tempah Kuih Siap (Loyang)</h4>
+                  <p style={{ color: '#64748B', fontSize: '0.85rem', lineHeight: '1.5', margin: '0 0 1rem 0' }}>
+                    Pelanggan tempah kuih talam siap masak dengan pilihan saiz 8x8, 9x9, 10x10, kaedah ambil/penghantaran, dan terus bayar.
+                  </p>
+                  <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#64748B' }}>Route: <code>/tempah-kuih</code></span>
+                    <button onClick={() => navigate('/tempah-kuih')} style={{ background: '#B45309', color: 'white', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600 }}>
+                      Buka Tempah Kuih ↗
                     </button>
                   </div>
                 </div>
