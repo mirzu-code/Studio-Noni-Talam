@@ -24,7 +24,7 @@ const Admin = () => {
   const [loadingLogin, setLoadingLogin] = useState(false);
   const [testimonials, setTestimonials] = useState([]);
   const [bookings, setBookings] = useState([]);
-  const [activeTab, setActiveTab] = useState('bookings');
+  const [activeTab, setActiveTab] = useState('bookings'); // 'bookings' | 'testimonials' | 'pages'
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -362,6 +362,9 @@ const Admin = () => {
           <button style={tabStyle('testimonials')} onClick={() => setActiveTab('testimonials')}>
             Testimonials {pendingTestimonials.length > 0 && <span style={{ background: '#EF4444', color: 'white', borderRadius: '50%', padding: '1px 6px', fontSize: '0.7rem', marginLeft: '6px' }}>{pendingTestimonials.length}</span>}
           </button>
+          <button style={tabStyle('pages')} onClick={() => setActiveTab('pages')}>
+            🌐 Page Management
+          </button>
         </div>
 
         <div style={{ padding: '2rem' }}>
@@ -455,6 +458,97 @@ const Admin = () => {
                     <button onClick={() => handleDeleteTestimonial(t.id)} style={{ background: '#EF4444', color: 'white', border: 'none', padding: '0.3rem 0.7rem', borderRadius: '4px', cursor: 'pointer', marginTop: '0.5rem' }}>Delete</button>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── PAGES MANAGEMENT TAB ── */}
+          {activeTab === 'pages' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div>
+                  <h3 style={{ color: '#0F172A', margin: 0, fontSize: '1.3rem' }}>Pengurusan Semua Halaman (All Pages)</h3>
+                  <p style={{ color: '#64748B', fontSize: '0.9rem', margin: '4px 0 0' }}>
+                    Semak, pantau, dan akses pantas pautan konfigurasi bagi setiap halaman web Studio Noni Talam.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                {/* 1. Studio Page Info */}
+                <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                    <span style={{ fontSize: '1.5rem' }}>🏛️</span>
+                    <span style={{ background: '#ECFDF5', color: '#047857', fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '12px' }}>AKTIF</span>
+                  </div>
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#0F172A', fontSize: '1.1rem' }}>1. Studio Page (Tempahan)</h4>
+                  <p style={{ color: '#64748B', fontSize: '0.85rem', lineHeight: '1.5', margin: '0 0 1rem 0' }}>
+                    Pakej bengkel, pemilihan tarikh & slot masa, pendaftaran borang murid, dan integrasi bayaran.
+                  </p>
+                  <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#64748B' }}>Route: <code>/</code></span>
+                    <button onClick={() => navigate('/')} style={{ background: '#047857', color: 'white', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600 }}>
+                      Buka Studio ↗
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Product Page Info */}
+                <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                    <span style={{ fontSize: '1.5rem' }}>🛍️</span>
+                    <span style={{ background: '#EFF6FF', color: '#1D4ED8', fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '12px' }}>TIKTOK SHOP</span>
+                  </div>
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#0F172A', fontSize: '1.1rem' }}>2. Product Page (Landing Page)</h4>
+                  <p style={{ color: '#64748B', fontSize: '0.85rem', lineHeight: '1.5', margin: '0 0 1rem 0' }}>
+                    Koleksi produk kuih, tepung premix, peralatan loyang, dan sambungan terus ke TikTok Shop rasmi (@nonitalam).
+                  </p>
+                  <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#64748B' }}>Route: <code>/product</code></span>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button onClick={() => navigate('/product')} style={{ background: '#1E293B', color: 'white', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600 }}>
+                        Buka Produk ↗
+                      </button>
+                      <a href="https://www.tiktok.com/@nonitalam" target="_blank" rel="noopener noreferrer" style={{ background: '#000000', color: 'white', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center' }}>
+                        TikTok
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Learn Page Info */}
+                <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                    <span style={{ fontSize: '1.5rem' }}>🎓</span>
+                    <span style={{ background: '#FEF3C7', color: '#B45309', fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '12px' }}>VIDEO & GAME</span>
+                  </div>
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#0F172A', fontSize: '1.1rem' }}>3. Learn Page (Video & Game)</h4>
+                  <p style={{ color: '#64748B', fontSize: '0.85rem', lineHeight: '1.5', margin: '0 0 1rem 0' }}>
+                    Pautan video panduan YouTube, modul teori kuih, dan Mini Game interaktif 5 langkah pembuatan talam.
+                  </p>
+                  <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#64748B' }}>Route: <code>/learn</code></span>
+                    <button onClick={() => navigate('/learn')} style={{ background: '#B45309', color: 'white', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600 }}>
+                      Buka Learn ↗
+                    </button>
+                  </div>
+                </div>
+
+                {/* 4. Admin Portal Info */}
+                <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                    <span style={{ fontSize: '1.5rem' }}>🔐</span>
+                    <span style={{ background: '#F3E8FF', color: '#7E22CE', fontSize: '0.75rem', fontWeight: 700, padding: '3px 8px', borderRadius: '12px' }}>PORTAL PENTADBIR</span>
+                  </div>
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#0F172A', fontSize: '1.1rem' }}>4. Admin Dashboard</h4>
+                  <p style={{ color: '#64748B', fontSize: '0.85rem', lineHeight: '1.5', margin: '0 0 1rem 0' }}>
+                    Kawalan pesanan tempahan slot studio, pengesahan testimoni, dan pengurusan navigasi laman.
+                  </p>
+                  <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '0.8rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#64748B' }}>Route: <code>/admin</code></span>
+                    <span style={{ color: '#047857', fontSize: '0.8rem', fontWeight: 600 }}>Sesi Aktif</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}
