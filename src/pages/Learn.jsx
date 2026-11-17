@@ -159,12 +159,6 @@ const HEAT_LEVELS = [
   { id: 'high', label: 'Api besar' }
 ];
 
-const KUIH_SIZES = [
-  { id: '8x8', label: '8 × 8', portions: '± 25–36 potong' },
-  { id: '9x9', label: '9 × 9', portions: '± 36–49 potong' },
-  { id: '10x10', label: '10 × 10', portions: '± 50–64 potong' }
-];
-
 const createGameSteps = (recipe) => {
   if (Array.isArray(recipe.steps)) return recipe.steps;
 
@@ -249,7 +243,6 @@ const Learn = () => {
   const [selectedRecipeId, setSelectedRecipeId] = useState(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [placedIngredients, setPlacedIngredients] = useState([]);
-  const [selectedSize, setSelectedSize] = useState('8x8');
   const [isCooled, setIsCooled] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -380,7 +373,6 @@ const Learn = () => {
     setSelectedRecipeId(recipeId);
     setCurrentStepIndex(0);
     setPlacedIngredients([]);
-    setSelectedSize('8x8');
     setIsCooled(false);
     setGameOver(false);
     setIsProcessing(false);
@@ -541,7 +533,6 @@ const Learn = () => {
     setSelectedRecipeId(null);
     setCurrentStepIndex(0);
     setPlacedIngredients([]);
-    setSelectedSize('8x8');
     setIsCooled(false);
     setGameOver(false);
     setIsProcessing(false);
@@ -1029,40 +1020,22 @@ const Learn = () => {
                 </div>
               ) : (
                 <div className="game-result">
-                  <div className={`finished-kuih size-${selectedSize}`} aria-hidden="true">
+                  <div className="finished-kuih" aria-hidden="true">
                     {selectedRecipe.layers.map((layer, index) => (
                       <span key={`${layer}-${index}`} className={`finished-layer layer-${layer}`} />
                     ))}
                   </div>
                   <h3>Wah, {selectedRecipe.name} dah siap! 🎉</h3>
                   <p className="result-msg">
-                    Hebat, chef kecil! Anda berjaya siapkan semua langkah. Pilih saiz kuih untuk tempahan.
+                    Hebat, chef kecil! Anda berjaya siapkan semua langkah. Tempah kuih siap untuk pilih saiz.
                   </p>
-
-                  <div className="finished-size-select">
-                    <h4>Pilih saiz kuih siap</h4>
-                    <div className="size-options">
-                      {KUIH_SIZES.map((size) => (
-                        <button
-                          key={size.id}
-                          className={selectedSize === size.id ? 'selected' : ''}
-                          type="button"
-                          onClick={() => setSelectedSize(size.id)}
-                          aria-pressed={selectedSize === size.id}
-                        >
-                          <strong>{size.label}</strong>
-                          <span>{size.portions}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
 
                   <div className="game-result-actions">
                     <button className="restart-btn" type="button" onClick={handleRestartGame}>
                       Buat kuih lain
                     </button>
-                    <a href="/" className="book-studio-btn">
-                      🏛️ Tempah Kelas Bengkel Studio
+                    <a href="/tempah-kuih" className="book-studio-btn">
+                      🛍️ Tempah kuih siap & pilih saiz
                     </a>
                   </div>
                 </div>

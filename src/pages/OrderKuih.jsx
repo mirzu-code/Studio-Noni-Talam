@@ -283,7 +283,7 @@ const OrderKuih = () => {
                   </div>
 
                   {selectedKuih.hasSizeOptions ? (
-                    <div className="size-selection-block">
+                    <div className="size-selection-block" id="kuih-size-options">
                       <label className="section-label">Pilih Saiz Loyang:</label>
                       <div className="size-options-grid" role="group" aria-label="Pilih saiz loyang">
                         {[
@@ -368,6 +368,11 @@ const OrderKuih = () => {
                     <span className="preview-size">
                       {selectedKuih?.hasSizeOptions ? `Loyang Saiz: ${selectedSize}` : 'Pek Standard'}
                     </span>
+                    {selectedKuih?.hasSizeOptions && (
+                      <a className="preview-size-link" href="#kuih-size-options">
+                        Tukar saiz
+                      </a>
+                    )}
                     <div className="preview-calc">
                       RM {currentUnitPrice.toFixed(2)} x {quantity} unit
                     </div>
