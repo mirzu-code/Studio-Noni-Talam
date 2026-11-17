@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { supabase } from '../../supabaseClient';
 import './Learn.css';
 
 const GAME_RECIPES = [
@@ -42,6 +43,9 @@ const GAME_RECIPES = [
       { id: 'taro', name: 'Keladi segar', emoji: '🍠' }
     ],
     prepAction: 'Sediakan keladi',
+    prepMode: 'cut',
+    prepTarget: 'tray',
+    prepTargetLabel: 'Papan pemotong',
     baseTitle: 'Gaul adunan keladi',
     baseInstruction: 'Gaulkan keladi dengan adunan tepung lembut.',
     baseTarget: 'tray',
@@ -53,6 +57,7 @@ const GAME_RECIPES = [
     layerInstruction: 'Lengkapkan talam dengan sambal udang kering dan bawang goreng.',
     layerAction: 'Tabur lauk rangup',
     layerAfterSteam: true,
+    layerMode: 'add',
     layerItems: [
       { id: 'dried-shrimp', name: 'Sambal udang kering', emoji: '🦐' },
       { id: 'fried-onion', name: 'Bawang goreng', emoji: '🧅' }
@@ -71,12 +76,14 @@ const GAME_RECIPES = [
       { id: 'palm-sugar', name: 'Gula Melaka', emoji: '🟤' }
     ],
     prepAction: 'Gaul suji dan gula',
+    prepMode: 'stir',
     baseTitle: 'Sediakan lapisan santan',
     baseInstruction: 'Tambah adunan santan pekat untuk lapisan talam yang berkilau.',
     baseItems: [
       { id: 'thick-coconut-milk', name: 'Santan pekat', emoji: '🥥' }
     ],
     baseAction: 'Tambah santan',
+    baseMode: 'add',
     layerTitle: 'Susun lapisan suji',
     layerInstruction: 'Tuangkan adunan suji keemasan dan lapisan santan ke dalam loyang.',
     layerAction: 'Susun lapisan suji',
@@ -96,12 +103,14 @@ const GAME_RECIPES = [
       { id: 'cendol', name: 'Cendol pandan', emoji: '🍃' }
     ],
     prepAction: 'Sediakan cendol',
+    prepMode: 'add',
     baseTitle: 'Tambah lapisan santan',
     baseInstruction: 'Padankan cendol dengan lapisan santan sawit.',
     baseItems: [
       { id: 'palm-coconut-milk', name: 'Santan sawit', emoji: '🥥' }
     ],
     baseAction: 'Tambah lapisan santan',
+    baseMode: 'pour',
     layerTitle: 'Tuang gula Melaka',
     layerInstruction: 'Akhiri lapisan dengan gula Melaka pekat.',
     layerAction: 'Tuang gula Melaka',
@@ -123,6 +132,7 @@ const GAME_RECIPES = [
       { id: 'celery-leaves', name: 'Daun sup', emoji: '🌿' }
     ],
     prepAction: 'Gaul bahan lauk',
+    prepMode: 'stir',
     baseTitle: 'Sediakan tapak talam',
     baseInstruction: 'Tuang adunan talam lembut ke dalam loyang.',
     baseTarget: 'tray',
@@ -131,24 +141,42 @@ const GAME_RECIPES = [
       { id: 'soft-batter', name: 'Adunan talam', emoji: '🥣' }
     ],
     baseAction: 'Tuang adunan',
+    baseMode: 'pour',
     layerTitle: 'Tambah lauk di atas',
     layerInstruction: 'Taburkan campuran daging berempah di atas adunan talam.',
     layerAction: 'Tambah lauk',
+    layerMode: 'add',
     layerItems: [
       { id: 'spiced-topping', name: 'Lauk berempah', emoji: '🍲' }
     ]
   }
 ];
 
+const HEAT_LEVELS = [
+  { id: 'low', label: 'Api kecil' },
+  { id: 'medium-low', label: 'Sederhana kecil' },
+  { id: 'medium', label: 'Api sederhana' },
+  { id: 'high', label: 'Api besar' }
+];
+
+const KUIH_SIZES = [
+  { id: '8x8', label: '8 × 8', portions: '± 25–36 potong' },
+  { id: '9x9', label: '9 × 9', portions: '± 36–49 potong' },
+  { id: '10x10', label: '10 × 10', portions: '± 50–64 potong' }
+];
+
 const createGameSteps = (recipe) => {
+  if (Array.isArray(recipe.steps)) return recipe.steps;
+
   const steps = [
     {
       title: recipe.prepTitle,
       instruction: recipe.prepInstruction,
-      target: 'bowl',
-      targetLabel: 'Mangkuk adunan',
+      target: recipe.prepTarget || 'bowl',
+      targetLabel: recipe.prepTargetLabel || 'Mangkuk adunan',
       items: recipe.prepItems,
-      action: recipe.prepAction
+      action: recipe.prepMode || 'blend',
+      actionLabel: recipe.prepAction
     },
     {
       title: recipe.baseTitle,
@@ -156,7 +184,8 @@ const createGameSteps = (recipe) => {
       target: recipe.baseTarget || 'bowl',
       targetLabel: recipe.baseTargetLabel || 'Mangkuk adunan',
       items: recipe.baseItems,
-      action: recipe.baseAction || 'Gaul adunan'
+      action: recipe.baseMode || 'stir',
+      actionLabel: recipe.baseAction || 'Gaul adunan'
     }
   ];
 
@@ -169,7 +198,8 @@ const createGameSteps = (recipe) => {
       items: [
         { id: 'pandan-pulut-base', name: 'Tapak pulut', emoji: '🍚' }
       ],
-      action: 'Tekan dan padatkan'
+      action: 'press',
+      actionLabel: 'Tekan dan padatkan'
     });
   }
 
@@ -179,7 +209,8 @@ const createGameSteps = (recipe) => {
     target: 'tray',
     targetLabel: 'Loyang kuih',
     items: recipe.layerItems,
-    action: recipe.layerAction || 'Susun lapisan'
+    action: recipe.layerMode || 'pour',
+    actionLabel: recipe.layerAction || 'Susun lapisan'
   };
   const steamStep = {
     title: 'Kukus hingga masak',
@@ -187,7 +218,9 @@ const createGameSteps = (recipe) => {
     target: 'steamer',
     targetLabel: 'Pengukus',
     items: [],
-    action: 'Kukus kuih'
+    action: 'heat',
+    actionLabel: 'Panaskan dan kukus',
+    heatLevel: 'medium-low'
   };
   const finishStep = {
     title: 'Sejukkan dan potong',
@@ -197,7 +230,8 @@ const createGameSteps = (recipe) => {
     items: [
       { id: 'knife', name: 'Pisau plastik', emoji: '🔪' }
     ],
-    action: 'Potong kuih talam',
+    action: 'cut',
+    actionLabel: 'Potong kuih talam',
     needsCooling: true
   };
 
@@ -210,25 +244,126 @@ const Learn = () => {
   const [activeTab, setActiveTab] = useState('video'); // 'video' | 'game' | 'modules'
 
   // Game state
+  const [customRecipes, setCustomRecipes] = useState([]);
+  const [recipeLoadError, setRecipeLoadError] = useState('');
   const [selectedRecipeId, setSelectedRecipeId] = useState(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [placedIngredients, setPlacedIngredients] = useState([]);
+  const [selectedSize, setSelectedSize] = useState('8x8');
   const [isCooled, setIsCooled] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [gameFeedback, setGameFeedback] = useState('Pilih kuih kegemaran untuk mula bermain.');
+  const [stirProgress, setStirProgress] = useState(0);
+  const [isStirring, setIsStirring] = useState(false);
+  const [pressProgress, setPressProgress] = useState(0);
+  const [isPressing, setIsPressing] = useState(false);
+  const [selectedHeat, setSelectedHeat] = useState('');
+  const [heatProgress, setHeatProgress] = useState(0);
+  const [isHeating, setIsHeating] = useState(false);
+  const [cutProgress, setCutProgress] = useState(0);
+  const gestureRef = useRef(null);
+  const gestureDistanceRef = useRef(0);
+  const gestureRotationRef = useRef(0);
 
-  const selectedRecipe = GAME_RECIPES.find((recipe) => recipe.id === selectedRecipeId);
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchCustomRecipes = async () => {
+      const { data, error } = await supabase
+        .from('game_recipes')
+        .select('id, name, description, icon, layers, steps')
+        .order('created_at', { ascending: true });
+
+      if (!isMounted) return;
+      if (error) {
+        console.error('Unable to load custom kuih games:', error);
+        setRecipeLoadError('Game tambahan belum dapat dimuatkan. Pastikan jadual game_recipes Supabase telah disediakan.');
+        return;
+      }
+
+      setCustomRecipes((data || []).map((recipe) => ({
+        ...recipe,
+        emoji: recipe.icon || '🍰',
+        layers: Array.isArray(recipe.layers) ? recipe.layers : ['green', 'white']
+      })));
+    };
+
+    fetchCustomRecipes().catch((error) => {
+      console.error('Unable to load custom kuih games:', error);
+      if (isMounted) setRecipeLoadError('Game tambahan tidak dapat dimuatkan buat masa ini.');
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isHeating) return undefined;
+
+    const timer = window.setInterval(() => {
+      setHeatProgress((progress) => Math.min(100, progress + 4));
+    }, 120);
+
+    return () => window.clearInterval(timer);
+  }, [isHeating]);
+
+  useEffect(() => {
+    if (!isPressing) return undefined;
+
+    const timer = window.setInterval(() => {
+      setPressProgress((progress) => Math.min(100, progress + 5));
+    }, 100);
+
+    return () => window.clearInterval(timer);
+  }, [isPressing]);
+
+  useEffect(() => {
+    if (pressProgress === 100) {
+      setIsPressing(false);
+      setGameFeedback('Bagus! Tapak kuih sudah padat.');
+    }
+  }, [pressProgress]);
+
+  useEffect(() => {
+    if (heatProgress === 100) {
+      setIsHeating(false);
+      setGameFeedback('Adunan sudah dipanaskan. Teruskan ke langkah seterusnya!');
+    }
+  }, [heatProgress]);
+
+  const availableRecipes = [...GAME_RECIPES, ...customRecipes];
+  const selectedRecipe = availableRecipes.find((recipe) => recipe.id === selectedRecipeId);
   const gameSteps = selectedRecipe ? createGameSteps(selectedRecipe) : [];
   const currentStep = gameSteps[currentStepIndex];
+  const areCurrentStepItemsPlaced = currentStep
+    ? currentStep.items.every((item) => placedIngredients.includes(item.id))
+    : false;
+
+  const resetStepActions = () => {
+    setStirProgress(0);
+    setIsStirring(false);
+    setPressProgress(0);
+    setIsPressing(false);
+    setSelectedHeat('');
+    setHeatProgress(0);
+    setIsHeating(false);
+    setCutProgress(0);
+    gestureRef.current = null;
+    gestureDistanceRef.current = 0;
+    gestureRotationRef.current = 0;
+  };
 
   const handleSelectRecipe = (recipeId) => {
     setSelectedRecipeId(recipeId);
     setCurrentStepIndex(0);
     setPlacedIngredients([]);
+    setSelectedSize('8x8');
     setIsCooled(false);
     setGameOver(false);
     setIsProcessing(false);
+    resetStepActions();
     setGameFeedback('Seret bahan ke dalam bekas atau tekan bahannya.');
   };
 
@@ -246,6 +381,83 @@ const Learn = () => {
       : `${ingredient.name} sudah dimasukkan. Teruskan dengan bahan seterusnya.`);
   };
 
+  const handleGestureStart = (event) => {
+    if (!currentStep || isProcessing || !areCurrentStepItemsPlaced) return;
+    if (!['stir', 'blend', 'press', 'cut'].includes(currentStep.action)) return;
+    if ((currentStep.needsCooling || currentStep.action === 'cool') && !isCooled) return;
+
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const targetBounds = event.currentTarget.getBoundingClientRect();
+    gestureRef.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      centerX: targetBounds.left + targetBounds.width / 2,
+      centerY: targetBounds.top + targetBounds.height / 2
+    };
+    if (currentStep.action === 'stir' || currentStep.action === 'blend') setIsStirring(true);
+    if (currentStep.action === 'press') setIsPressing(true);
+  };
+
+  const handleGestureMove = (event) => {
+    const gesture = gestureRef.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - gesture.x;
+    const deltaY = event.clientY - gesture.y;
+    if (currentStep.action === 'stir' || currentStep.action === 'blend') {
+      const previousRadius = Math.hypot(gesture.x - gesture.centerX, gesture.y - gesture.centerY);
+      const currentRadius = Math.hypot(event.clientX - gesture.centerX, event.clientY - gesture.centerY);
+      if (previousRadius > 20 && currentRadius > 20) {
+        const previousAngle = Math.atan2(gesture.y - gesture.centerY, gesture.x - gesture.centerX);
+        const currentAngle = Math.atan2(event.clientY - gesture.centerY, event.clientX - gesture.centerX);
+        let rotation = currentAngle - previousAngle;
+        if (rotation > Math.PI) rotation -= Math.PI * 2;
+        if (rotation < -Math.PI) rotation += Math.PI * 2;
+        gestureRotationRef.current += rotation;
+        const progress = Math.min(100, Math.round(Math.abs(gestureRotationRef.current) / (Math.PI * 2) * 100));
+        setStirProgress(progress);
+        if (progress === 100) {
+          setGameFeedback(currentStep.action === 'blend'
+            ? 'Bagus! Bahan sudah dikisar halus.'
+            : 'Bagus! Adunan sudah sebati.');
+        }
+      }
+    } else if (currentStep.action === 'cut' && Math.abs(deltaX) > Math.abs(deltaY)) {
+      gestureDistanceRef.current += Math.abs(deltaX);
+      const progress = Math.min(100, Math.round(gestureDistanceRef.current / 420 * 100));
+      setCutProgress(progress);
+      if (progress === 100) setGameFeedback('Potongan kuih sudah kemas!');
+    }
+
+    gestureRef.current = { ...gesture, x: event.clientX, y: event.clientY };
+  };
+
+  const handleGestureEnd = (event) => {
+    if (gestureRef.current?.pointerId !== event.pointerId) return;
+    gestureRef.current = null;
+    setIsStirring(false);
+    setIsPressing(false);
+  };
+
+  const handleStartHeating = () => {
+    if (!areCurrentStepItemsPlaced) {
+      setGameFeedback('Masukkan semua bahan yang diperlukan dahulu.');
+      return;
+    }
+
+    const targetHeat = currentStep.heatLevel || 'medium-low';
+    if (selectedHeat !== targetHeat) {
+      const heatLabel = HEAT_LEVELS.find((level) => level.id === targetHeat)?.label || 'tahap api yang betul';
+      setGameFeedback(`Pilih ${heatLabel.toLowerCase()} supaya kuih masak sekata.`);
+      return;
+    }
+    setIsHeating(true);
+    const heatLabel = HEAT_LEVELS.find((level) => level.id === targetHeat)?.label || 'api yang dipilih';
+    setGameFeedback(`Bagus! Kekalkan ${heatLabel.toLowerCase()} sehingga kuih masak.`);
+  };
+
   const handleDrop = (event) => {
     event.preventDefault();
     handleIngredientDrop(event.dataTransfer.getData('text/plain'));
@@ -253,8 +465,12 @@ const Learn = () => {
 
   const handleNextStep = () => {
     if (!currentStep || isProcessing) return;
-    const allItemsPlaced = currentStep.items.every((item) => placedIngredients.includes(item.id));
-    if (!allItemsPlaced || (currentStep.needsCooling && !isCooled)) return;
+    if (!areCurrentStepItemsPlaced) return;
+    if ((currentStep.action === 'stir' || currentStep.action === 'blend') && stirProgress < 100) return;
+    if (currentStep.action === 'press' && pressProgress < 100) return;
+    if (currentStep.action === 'heat' && heatProgress < 100) return;
+    if (currentStep.action === 'cut' && cutProgress < 100) return;
+    if ((currentStep.needsCooling || currentStep.action === 'cool') && !isCooled) return;
 
     setIsProcessing(true);
     setGameFeedback('Sedang menyediakan kuih…');
@@ -263,9 +479,12 @@ const Learn = () => {
         setCurrentStepIndex((step) => step + 1);
         setPlacedIngredients([]);
         setIsCooled(false);
+        resetStepActions();
         setGameFeedback('Bagus! Ikuti langkah seterusnya.');
       } else {
         setGameOver(true);
+        setIsProcessing(false);
+        return;
       }
       setIsProcessing(false);
     }, 650);
@@ -275,9 +494,11 @@ const Learn = () => {
     setSelectedRecipeId(null);
     setCurrentStepIndex(0);
     setPlacedIngredients([]);
+    setSelectedSize('8x8');
     setIsCooled(false);
     setGameOver(false);
     setIsProcessing(false);
+    resetStepActions();
     setGameFeedback('Pilih kuih kegemaran untuk mula bermain.');
   };
 
@@ -444,8 +665,9 @@ const Learn = () => {
               {!selectedRecipe ? (
                 <div className="recipe-select">
                   <p className="recipe-select-intro">Pilih kuih yang ingin dibuat. Seret atau tekan bahan untuk siapkan setiap langkah.</p>
+                  {recipeLoadError && <p className="recipe-load-error" role="status">{recipeLoadError}</p>}
                   <div className="recipe-grid">
-                    {GAME_RECIPES.map((recipe) => (
+                    {availableRecipes.map((recipe) => (
                       <button
                         key={recipe.id}
                         className="recipe-card"
@@ -460,7 +682,9 @@ const Learn = () => {
                         </span>
                         <strong>{recipe.name}</strong>
                         <span className="recipe-description">{recipe.description}</span>
-                        <span className="recipe-step-count">{createGameSteps(recipe).length} langkah</span>
+                        <span className="recipe-step-count">
+                          {createGameSteps(recipe).length} langkah
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -485,16 +709,38 @@ const Learn = () => {
                     <div className="scene-shelf" aria-hidden="true">
                       <span>🫙</span><span>🥄</span><span>🧂</span>
                     </div>
-                    <div className="scene-utensils" aria-hidden="true">🥄　🍴　🥣</div>
+                    <div className="scene-utensils" aria-hidden="true">
+                      {currentStep.action === 'cut' ? '🔪　🍰　🥣' : '🥄　🍴　🥣'}
+                    </div>
                     <div
-                      className={`cooking-target target-${currentStep.target}`}
+                      className={`cooking-target target-${currentStep.target} ${['stir', 'blend', 'press', 'cut'].includes(currentStep.action) && areCurrentStepItemsPlaced ? 'gesture-ready' : ''} ${isStirring ? 'stirring' : ''} ${isPressing ? 'pressing' : ''}`}
                       onDragOver={(event) => event.preventDefault()}
                       onDrop={handleDrop}
+                      onPointerDown={handleGestureStart}
+                      onPointerMove={handleGestureMove}
+                      onPointerUp={handleGestureEnd}
+                      onPointerCancel={handleGestureEnd}
                       role="region"
-                      aria-label={`Letak bahan di ${currentStep.targetLabel}`}
+                      aria-label={currentStep.action === 'stir'
+                        ? 'Gerakkan tetikus atau jari secara berpusing untuk mengaul adunan'
+                        : currentStep.action === 'blend'
+                          ? 'Gerakkan tetikus atau jari secara berpusing untuk mengisar bahan'
+                          : currentStep.action === 'press'
+                            ? 'Tekan dan tahan pada loyang untuk memadatkan kuih'
+                            : currentStep.action === 'cut'
+                              ? 'Seret pisau melintasi kuih untuk memotong'
+                              : `Letak bahan di ${currentStep.targetLabel}`}
                     >
                       <span className="target-emoji" aria-hidden="true">
-                        {currentStep.target === 'bowl' ? '🥣' : currentStep.target === 'tray' ? '🍱' : currentStep.target === 'steamer' ? '♨️' : '🍰'}
+                        {currentStep.action === 'blend'
+                          ? '🌀'
+                          : currentStep.target === 'bowl'
+                            ? '🥣'
+                            : currentStep.target === 'tray'
+                              ? '🍱'
+                              : currentStep.target === 'steamer'
+                                ? '♨️'
+                                : '🍰'}
                       </span>
                       <div className="target-contents" aria-live="polite">
                         {placedIngredients.map((id) => {
@@ -507,13 +753,83 @@ const Learn = () => {
                     {isProcessing && <span className="scene-action" aria-live="polite">✨</span>}
                   </div>
 
-                  {currentStep.needsCooling && !isCooled && (
+                  {(currentStep.action === 'stir' || currentStep.action === 'blend') && (
+                    <div className="action-control">
+                      <p>
+                        {currentStep.action === 'blend'
+                          ? 'Gerakkan tetikus atau jari berpusing di atas pengisar untuk mengisar bahan.'
+                          : 'Gerakkan tetikus atau jari berpusing di atas mangkuk untuk mengaul adunan.'}
+                      </p>
+                      <div className="action-progress" role="progressbar" aria-label={currentStep.action === 'blend' ? 'Kemajuan mengisar' : 'Kemajuan mengaul'} aria-valuenow={stirProgress} aria-valuemin="0" aria-valuemax="100">
+                        <span style={{ width: `${stirProgress}%` }} />
+                      </div>
+                      <strong>{stirProgress}% {currentStep.action === 'blend' ? 'siap dikisar' : 'siap dikacau'}</strong>
+                    </div>
+                  )}
+
+                  {currentStep.action === 'press' && (
+                    <div className="action-control">
+                      <p>Tekan dan tahan tetikus atau jari pada loyang sehingga tapak kuih padat.</p>
+                      <div className="action-progress" role="progressbar" aria-label="Kemajuan memadatkan" aria-valuenow={pressProgress} aria-valuemin="0" aria-valuemax="100">
+                        <span style={{ width: `${pressProgress}%` }} />
+                      </div>
+                      <strong>{pressProgress}% siap dipadatkan</strong>
+                    </div>
+                  )}
+
+                  {currentStep.action === 'heat' && (
+                    <div className="heat-control">
+                      <p>Pilih tahap api untuk memanaskan kuih. Api sasaran: {HEAT_LEVELS.find((level) => level.id === (currentStep.heatLevel || 'medium-low'))?.label || 'Sederhana kecil'}.</p>
+                      <div className="heat-options">
+                        {HEAT_LEVELS.map((level) => (
+                          <button
+                            key={level.id}
+                            className={selectedHeat === level.id ? 'selected' : ''}
+                            type="button"
+                            onClick={() => setSelectedHeat(level.id)}
+                            disabled={isHeating || heatProgress === 100}
+                          >
+                            {level.label}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        className="heat-start-btn"
+                        type="button"
+                        onClick={handleStartHeating}
+                        disabled={isHeating || heatProgress === 100 || !areCurrentStepItemsPlaced}
+                      >
+                        {isHeating ? 'Sedang memanaskan…' : '🔥 Mula panaskan'}
+                      </button>
+                      <div className="action-progress" role="progressbar" aria-label="Kemajuan memasak" aria-valuenow={heatProgress} aria-valuemin="0" aria-valuemax="100">
+                        <span style={{ width: `${heatProgress}%` }} />
+                      </div>
+                    </div>
+                  )}
+
+                  {currentStep.action === 'cut' && (
+                    <div className="action-control">
+                      <p>
+                        {currentStep.needsCooling
+                          ? 'Seret pisau kiri dan kanan di atas kuih untuk membuat potongan.'
+                          : `Seret pisau kiri dan kanan di atas ${currentStep.targetLabel.toLowerCase()} untuk memotong bahan.`}
+                      </p>
+                      <div className="action-progress" role="progressbar" aria-label="Kemajuan memotong" aria-valuenow={cutProgress} aria-valuemin="0" aria-valuemax="100">
+                        <span style={{ width: `${cutProgress}%` }} />
+                      </div>
+                      <strong>{cutProgress}% siap dipotong</strong>
+                    </div>
+                  )}
+
+                  {(currentStep.needsCooling || currentStep.action === 'cool') && !isCooled && (
                     <button
                       className="cooling-btn"
                       type="button"
                       onClick={() => {
                         setIsCooled(true);
-                        setGameFeedback('Kuih sudah sejuk. Sekarang potong dengan pisau plastik.');
+                        setGameFeedback(currentStep.action === 'cut'
+                          ? 'Kuih sudah sejuk. Sekarang potong dengan pisau plastik.'
+                          : 'Kuih sudah sejuk. Teruskan langkah seterusnya.');
                       }}
                     >
                       Kuih sudah sejuk sepenuhnya
@@ -552,24 +868,46 @@ const Learn = () => {
                     type="button"
                     onClick={handleNextStep}
                     disabled={isProcessing ||
-                      !currentStep.items.every((item) => placedIngredients.includes(item.id)) ||
-                      (currentStep.needsCooling && !isCooled)
+                      !areCurrentStepItemsPlaced ||
+                      ((currentStep.action === 'stir' || currentStep.action === 'blend') && stirProgress < 100) ||
+                      (currentStep.action === 'press' && pressProgress < 100) ||
+                      (currentStep.action === 'heat' && heatProgress < 100) ||
+                      (currentStep.action === 'cut' && cutProgress < 100) ||
+                      ((currentStep.needsCooling || currentStep.action === 'cool') && !isCooled)
                     }
                   >
-                    {isProcessing ? 'Sedang diproses…' : `${currentStep.action} ➜`}
+                    {isProcessing ? 'Sedang diproses…' : `${currentStep.actionLabel || currentStep.title} ➜`}
                   </button>
                 </div>
               ) : (
                 <div className="game-result">
-                  <div className="finished-kuih" aria-hidden="true">
+                  <div className={`finished-kuih size-${selectedSize}`} aria-hidden="true">
                     {selectedRecipe.layers.map((layer, index) => (
                       <span key={`${layer}-${index}`} className={`finished-layer layer-${layer}`} />
                     ))}
                   </div>
                   <h3>{selectedRecipe.name} Siap!</h3>
                   <p className="result-msg">
-                    Hebat! Anda sudah menyiapkan lapisan, mengukus, menyejukkan dan memotong {selectedRecipe.name}.
+                    Hebat! Anda sudah menyelesaikan semua langkah untuk {selectedRecipe.name}.
                   </p>
+
+                  <div className="finished-size-select">
+                    <h4>Pilih saiz kuih siap</h4>
+                    <div className="size-options">
+                      {KUIH_SIZES.map((size) => (
+                        <button
+                          key={size.id}
+                          className={selectedSize === size.id ? 'selected' : ''}
+                          type="button"
+                          onClick={() => setSelectedSize(size.id)}
+                          aria-pressed={selectedSize === size.id}
+                        >
+                          <strong>{size.label}</strong>
+                          <span>{size.portions}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
                   <div className="game-result-actions">
                     <button className="restart-btn" type="button" onClick={handleRestartGame}>

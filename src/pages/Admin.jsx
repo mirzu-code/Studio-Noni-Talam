@@ -16,6 +16,54 @@ const statusBadge = (status) => {
   );
 };
 
+const GAME_ACTION_OPTIONS = [
+  { value: 'blend', label: 'Kisar' },
+  { value: 'stir', label: 'Gaul' },
+  { value: 'heat', label: 'Panaskan / kukus' },
+  { value: 'pour', label: 'Tuang' },
+  { value: 'press', label: 'Tekan / padatkan' },
+  { value: 'cool', label: 'Sejukkan' },
+  { value: 'cut', label: 'Potong' },
+  { value: 'add', label: 'Tambah bahan' }
+];
+
+const GAME_TARGET_OPTIONS = [
+  { value: 'bowl', label: 'Mangkuk adunan' },
+  { value: 'tray', label: 'Loyang kuih' },
+  { value: 'steamer', label: 'Pengukus' },
+  { value: 'cake', label: 'Kuih siap' }
+];
+
+const createGameStepDraft = () => ({
+  title: '',
+  instruction: '',
+  action: 'stir',
+  target: 'bowl',
+  ingredients: '',
+  heatLevel: 'medium-low',
+  needsCooling: false
+});
+
+const gameFormFieldStyle = {
+  display: 'block',
+  width: '100%',
+  boxSizing: 'border-box',
+  marginTop: '0.35rem',
+  padding: '0.65rem 0.75rem',
+  color: '#164C2D',
+  font: 'inherit',
+  background: '#FFFEF9',
+  border: '1px solid #D5E5CE',
+  borderRadius: '8px'
+};
+
+const gameFormLabelStyle = {
+  display: 'block',
+  color: '#164C2D',
+  fontSize: '0.87rem',
+  fontWeight: 700
+};
+
 const Admin = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -25,10 +73,23 @@ const Admin = () => {
   const [loadingLogin, setLoadingLogin] = useState(false);
   const [testimonials, setTestimonials] = useState([]);
   const [bookings, setBookings] = useState([]);
-  const [activeTab, setActiveTab] = useState('bookings'); // 'bookings' | 'kuih_catalog' | 'testimonials' | 'pages'
+  const [activeTab, setActiveTab] = useState('bookings'); // 'bookings' | 'kuih_catalog' | 'game_recipes' | 'testimonials' | 'pages'
   const [orderFilter, setOrderFilter] = useState('all'); // 'all' | 'kuih' | 'studio'
   const [kuihCatalog, setKuihCatalog] = useState(DEFAULT_KUIH_LIST);
   const [savingCatalog, setSavingCatalog] = useState(false);
+  const [gameRecipes, setGameRecipes] = useState([]);
+  const [gameRecipeError, setGameRecipeError] = useState('');
+  const [gameRecipeSuccess, setGameRecipeSuccess] = useState('');
+  const [gameRecipeLoading, setGameRecipeLoading] = useState(false);
+  const [savingGameRecipe, setSavingGameRecipe] = useState(false);
+  const [deletingGameRecipeId, setDeletingGameRecipeId] = useState(null);
+  const [gameRecipeDraft, setGameRecipeDraft] = useState({
+    name: '',
+    description: '',
+    icon: '🍰',
+    layers: 'green,white'
+  });
+  const [gameStepDrafts, setGameStepDrafts] = useState([createGameStepDraft()]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -216,6 +277,41 @@ const Admin = () => {
     };
   }, [loggedInUser]);
 
+  useEffect(() => {
+    if (!loggedInUser) return undefined;
+    let isMounted = true;
+    setGameRecipeLoading(true);
+    setGameRecipeError('');
+
+    const fetchGameRecipes = async () => {
+      const { data, error } = await supabase
+        .from('game_recipes')
+        .select('id, name, description, icon, layers, steps, created_at')
+        .order('created_at', { ascending: true });
+
+      if (!isMounted) return;
+      if (error) {
+        console.error('Unable to load game recipes in admin:', error);
+        setGameRecipeError('Game tambahan tidak dapat dimuatkan. Pastikan migrasi game_recipes telah dijalankan.');
+      } else {
+        setGameRecipes(data || []);
+      }
+      setGameRecipeLoading(false);
+    };
+
+    fetchGameRecipes().catch((error) => {
+      console.error('Unable to load game recipes in admin:', error);
+      if (isMounted) {
+        setGameRecipeError('Game tambahan tidak dapat dimuatkan buat masa ini.');
+        setGameRecipeLoading(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [loggedInUser]);
+
   // ─── Testimonial Actions ───────────────────────────────────────────────────
   const handleApproveTestimonial = async (id) => {
     try {
@@ -239,6 +335,116 @@ const Admin = () => {
       setTestimonials(prev => prev.filter(t => t.id !== id));
     } catch (err) {
       console.error('Error deleting testimonial:', err);
+    }
+  };
+
+  const updateGameStepDraft = (index, field, value) => {
+    setGameStepDrafts((steps) => steps.map((step, stepIndex) => (
+      stepIndex === index ? { ...step, [field]: value } : step
+    )));
+  };
+
+  const resetGameRecipeForm = () => {
+    setGameRecipeDraft({ name: '', description: '', icon: '🍰', layers: 'green,white' });
+    setGameStepDrafts([createGameStepDraft()]);
+  };
+
+  const handleCreateGameRecipe = async (event) => {
+    event.preventDefault();
+    setGameRecipeError('');
+    setGameRecipeSuccess('');
+
+    const layers = gameRecipeDraft.layers.split(',').map((layer) => layer.trim()).filter(Boolean);
+    const invalidLayer = layers.some((layer) => !['green', 'white', 'gold'].includes(layer));
+    const hasInvalidStep = gameStepDrafts.some((step) => !step.title.trim() || !step.instruction.trim());
+    if (!gameRecipeDraft.name.trim() || !gameRecipeDraft.description.trim() ||
+      layers.length === 0 || invalidLayer || gameStepDrafts.length === 0 || hasInvalidStep) {
+      setGameRecipeError('Lengkapkan nama, penerangan, warna lapisan yang sah, dan tajuk serta arahan bagi setiap langkah.');
+      return;
+    }
+
+    const steps = gameStepDrafts.map((step, stepIndex) => {
+      const target = GAME_TARGET_OPTIONS.find((option) => option.value === step.target);
+      const action = GAME_ACTION_OPTIONS.find((option) => option.value === step.action);
+      const items = step.ingredients
+        .split('\n')
+        .map((name) => name.trim())
+        .filter(Boolean)
+        .map((name, ingredientIndex) => ({
+          id: `step-${stepIndex + 1}-ingredient-${ingredientIndex + 1}`,
+          name,
+          emoji: '🥣'
+        }));
+
+      return {
+        title: step.title.trim(),
+        instruction: step.instruction.trim(),
+        target: step.target,
+        targetLabel: target.label,
+        items,
+        action: step.action,
+        actionLabel: action.label,
+        heatLevel: step.action === 'heat' ? step.heatLevel : undefined,
+        needsCooling: step.needsCooling || step.action === 'cut'
+      };
+    });
+
+    setSavingGameRecipe(true);
+    try {
+      const { data, error } = await supabase
+        .from('game_recipes')
+        .insert({
+          name: gameRecipeDraft.name.trim(),
+          description: gameRecipeDraft.description.trim(),
+          icon: gameRecipeDraft.icon.trim() || '🍰',
+          layers,
+          steps
+        })
+        .select('id, name, description, icon, layers, steps, created_at')
+        .single();
+
+      if (error) {
+        console.error('Unable to save game recipe:', error);
+        setGameRecipeError(`Game tidak berjaya disimpan: ${error.message}`);
+        return;
+      }
+
+      setGameRecipes((recipes) => [...recipes, data]);
+      setGameRecipeSuccess(`${data.name} berjaya ditambah ke game.`);
+      resetGameRecipeForm();
+    } catch (error) {
+      console.error('Unable to save game recipe:', error);
+      setGameRecipeError('Game tidak berjaya disimpan kerana sambungan Supabase terganggu.');
+    } finally {
+      setSavingGameRecipe(false);
+    }
+  };
+
+  const handleDeleteGameRecipe = async (recipe) => {
+    if (!window.confirm(`Padam game "${recipe.name}"?`)) return;
+    setGameRecipeError('');
+    setGameRecipeSuccess('');
+    setDeletingGameRecipeId(recipe.id);
+
+    try {
+      const { error } = await supabase
+        .from('game_recipes')
+        .delete()
+        .eq('id', recipe.id);
+
+      if (error) {
+        console.error('Unable to delete game recipe:', error);
+        setGameRecipeError(`Game tidak berjaya dipadam: ${error.message}`);
+        return;
+      }
+
+      setGameRecipes((recipes) => recipes.filter((item) => item.id !== recipe.id));
+      setGameRecipeSuccess(`${recipe.name} telah dipadam.`);
+    } catch (error) {
+      console.error('Unable to delete game recipe:', error);
+      setGameRecipeError('Game tidak berjaya dipadam kerana sambungan Supabase terganggu.');
+    } finally {
+      setDeletingGameRecipeId(null);
     }
   };
 
@@ -416,6 +622,9 @@ const Admin = () => {
           </button>
           <button style={tabStyle('kuih_catalog')} onClick={() => setActiveTab('kuih_catalog')}>
             🧁 Kawalan Menu & Harga Kuih
+          </button>
+          <button style={tabStyle('game_recipes')} onClick={() => setActiveTab('game_recipes')}>
+            🎮 Pengurusan Game Kuih
           </button>
           <button style={tabStyle('testimonials')} onClick={() => setActiveTab('testimonials')}>
             Testimonials {pendingTestimonials.length > 0 && <span style={{ background: '#EF4444', color: 'white', borderRadius: '50%', padding: '1px 6px', fontSize: '0.7rem', marginLeft: '6px' }}>{pendingTestimonials.length}</span>}
@@ -659,6 +868,203 @@ const Admin = () => {
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* ── KUIH GAME MANAGEMENT TAB ── */}
+          {activeTab === 'game_recipes' && (
+            <div>
+              <div style={{ marginBottom: '1.4rem' }}>
+                <h3 style={{ margin: 0, color: '#164C2D' }}>Tambah game membuat kuih</h3>
+                <p style={{ margin: '0.4rem 0 0', color: '#64748B', fontSize: '0.9rem' }}>
+                  Setiap langkah boleh mengandungi bahan dan tindakan seperti mengaul, mengukus, menyejukkan atau memotong.
+                </p>
+              </div>
+
+              {gameRecipeError && (
+                <p role="alert" style={{ padding: '0.8rem 1rem', color: '#8A4B08', background: '#FAF2D9', border: '1px solid #DFC66F', borderRadius: '8px' }}>
+                  {gameRecipeError}
+                </p>
+              )}
+              {gameRecipeSuccess && (
+                <p role="status" style={{ padding: '0.8rem 1rem', color: '#164C2D', background: '#EAF3E5', border: '1px solid #BED3AE', borderRadius: '8px' }}>
+                  {gameRecipeSuccess}
+                </p>
+              )}
+
+              <form onSubmit={handleCreateGameRecipe} style={{ display: 'grid', gap: '1rem', padding: '1.25rem', background: '#F8FAF5', border: '1px solid #D5E5CE', borderRadius: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '1rem' }}>
+                  <label style={gameFormLabelStyle}>
+                    Nama kuih
+                    <input
+                      style={gameFormFieldStyle}
+                      value={gameRecipeDraft.name}
+                      onChange={(event) => setGameRecipeDraft((draft) => ({ ...draft, name: event.target.value }))}
+                      maxLength={100}
+                      required
+                    />
+                  </label>
+                  <label style={gameFormLabelStyle}>
+                    Ikon (emoji)
+                    <input
+                      style={gameFormFieldStyle}
+                      value={gameRecipeDraft.icon}
+                      onChange={(event) => setGameRecipeDraft((draft) => ({ ...draft, icon: event.target.value }))}
+                      maxLength={8}
+                    />
+                  </label>
+                </div>
+
+                <label style={gameFormLabelStyle}>
+                  Penerangan ringkas
+                  <textarea
+                    style={{ ...gameFormFieldStyle, minHeight: '72px', resize: 'vertical' }}
+                    value={gameRecipeDraft.description}
+                    onChange={(event) => setGameRecipeDraft((draft) => ({ ...draft, description: event.target.value }))}
+                    maxLength={300}
+                    required
+                  />
+                </label>
+
+                <label style={gameFormLabelStyle}>
+                  Warna lapisan kuih
+                  <select
+                    style={gameFormFieldStyle}
+                    value={gameRecipeDraft.layers}
+                    onChange={(event) => setGameRecipeDraft((draft) => ({ ...draft, layers: event.target.value }))}
+                  >
+                    <option value="green,white">Hijau dan putih</option>
+                    <option value="white,gold">Putih dan kuning keemasan</option>
+                    <option value="green,white,gold">Hijau, putih dan kuning keemasan</option>
+                  </select>
+                </label>
+
+                <div style={{ display: 'grid', gap: '1rem' }}>
+                  {gameStepDrafts.map((step, index) => (
+                    <fieldset key={index} style={{ display: 'grid', gap: '0.8rem', minWidth: 0, padding: '1rem', border: '1px solid #D5E5CE', borderRadius: '10px' }}>
+                      <legend style={{ padding: '0 0.4rem', color: '#164C2D', fontWeight: 700 }}>Langkah {index + 1}</legend>
+                      <label style={gameFormLabelStyle}>
+                        Tajuk langkah
+                        <input
+                          style={gameFormFieldStyle}
+                          value={step.title}
+                          onChange={(event) => updateGameStepDraft(index, 'title', event.target.value)}
+                          maxLength={100}
+                          required
+                        />
+                      </label>
+                      <label style={gameFormLabelStyle}>
+                        Arahan untuk pemain
+                        <textarea
+                          style={{ ...gameFormFieldStyle, minHeight: '70px', resize: 'vertical' }}
+                          value={step.instruction}
+                          onChange={(event) => updateGameStepDraft(index, 'instruction', event.target.value)}
+                          maxLength={400}
+                          required
+                        />
+                      </label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.8rem' }}>
+                        <label style={gameFormLabelStyle}>
+                          Tindakan
+                          <select style={gameFormFieldStyle} value={step.action} onChange={(event) => updateGameStepDraft(index, 'action', event.target.value)}>
+                            {GAME_ACTION_OPTIONS.map((action) => <option key={action.value} value={action.value}>{action.label}</option>)}
+                          </select>
+                        </label>
+                        <label style={gameFormLabelStyle}>
+                          Tempat memasak
+                          <select style={gameFormFieldStyle} value={step.target} onChange={(event) => updateGameStepDraft(index, 'target', event.target.value)}>
+                            {GAME_TARGET_OPTIONS.map((target) => <option key={target.value} value={target.value}>{target.label}</option>)}
+                          </select>
+                        </label>
+                        {step.action === 'heat' && (
+                          <label style={gameFormLabelStyle}>
+                            Tahap api sasaran
+                            <select style={gameFormFieldStyle} value={step.heatLevel} onChange={(event) => updateGameStepDraft(index, 'heatLevel', event.target.value)}>
+                              <option value="low">Api kecil</option>
+                              <option value="medium-low">Sederhana kecil</option>
+                              <option value="medium">Api sederhana</option>
+                              <option value="high">Api besar</option>
+                            </select>
+                          </label>
+                        )}
+                      </div>
+                      <label style={gameFormLabelStyle}>
+                        Bahan/peralatan (satu item setiap baris; boleh dikosongkan untuk langkah panaskan)
+                        <textarea
+                          style={{ ...gameFormFieldStyle, minHeight: '64px', resize: 'vertical' }}
+                          value={step.ingredients}
+                          onChange={(event) => updateGameStepDraft(index, 'ingredients', event.target.value)}
+                          placeholder={'Contoh:\nTepung beras\nSantan'}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#164C2D', fontSize: '0.85rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={step.needsCooling}
+                          onChange={(event) => updateGameStepDraft(index, 'needsCooling', event.target.checked)}
+                        />
+                        Minta pemain sejukkan kuih sebelum langkah ini
+                      </label>
+                      {gameStepDrafts.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setGameStepDrafts((steps) => steps.filter((_, stepIndex) => stepIndex !== index))}
+                          style={{ justifySelf: 'start', padding: '0.45rem 0.7rem', color: '#991B1B', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '7px', cursor: 'pointer' }}
+                        >
+                          Buang langkah
+                        </button>
+                      )}
+                    </fieldset>
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.7rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setGameStepDrafts((steps) => [...steps, createGameStepDraft()])}
+                    style={{ padding: '0.65rem 0.9rem', color: '#164C2D', fontWeight: 700, background: '#EAF3E5', border: '1px solid #BED3AE', borderRadius: '8px', cursor: 'pointer' }}
+                  >
+                    + Tambah langkah
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingGameRecipe}
+                    style={{ padding: '0.65rem 1rem', color: 'white', fontWeight: 700, background: '#236B3C', border: 0, borderRadius: '8px', cursor: savingGameRecipe ? 'wait' : 'pointer', opacity: savingGameRecipe ? 0.65 : 1 }}
+                  >
+                    {savingGameRecipe ? 'Menyimpan…' : 'Simpan game'}
+                  </button>
+                </div>
+              </form>
+
+              <div style={{ marginTop: '2rem' }}>
+                <h3 style={{ color: '#164C2D' }}>Game tambahan ({gameRecipes.length})</h3>
+                {gameRecipeLoading ? (
+                  <p style={{ color: '#64748B' }}>Memuatkan game tambahan…</p>
+                ) : gameRecipes.length === 0 ? (
+                  <p style={{ color: '#64748B' }}>Belum ada game tambahan.</p>
+                ) : (
+                  <div style={{ display: 'grid', gap: '0.75rem' }}>
+                    {gameRecipes.map((recipe) => (
+                      <div key={recipe.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.8rem', padding: '0.9rem 1rem', background: '#FFFEF9', border: '1px solid #E2E8F0', borderRadius: '9px' }}>
+                        <div>
+                          <strong style={{ color: '#164C2D' }}>{recipe.icon || '🍰'} {recipe.name}</strong>
+                          <p style={{ margin: '0.25rem 0 0', color: '#64748B', fontSize: '0.82rem' }}>
+                            {Array.isArray(recipe.steps) ? recipe.steps.length : 0} langkah · {recipe.description}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={deletingGameRecipeId === recipe.id}
+                          onClick={() => handleDeleteGameRecipe(recipe)}
+                          style={{ padding: '0.5rem 0.75rem', color: '#991B1B', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '7px', cursor: 'pointer' }}
+                        >
+                          {deletingGameRecipeId === recipe.id ? 'Memadam…' : 'Padam game'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

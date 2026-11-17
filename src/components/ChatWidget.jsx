@@ -58,7 +58,7 @@ const answers = [
   },
   {
     keywords: ['learn', 'tutorial', 'recipe', 'game', 'belajar', 'video', 'kelas memasak'],
-    text: 'The Learn page has tutorials, learning notes, and an interactive kuih-making game with five varieties: pandan, keladi, suji gula Melaka, cendol, and meat. Choose one, then add or drag ingredients through the cooking steps until it is ready.'
+    text: 'The Learn page has tutorials, learning notes, and an interactive kuih-making game with five built-in varieties: pandan, keladi, suji gula Melaka, cendol, and meat. Admins can add more kuih games. Follow each step by adding ingredients, mixing, heating, cooling, or cutting the kuih. When it is ready, choose 8×8, 9×9, or 10×10.'
   },
   {
     keywords: ['order', 'buy', 'delivery', 'pickup', 'pick up', 'kuih', 'menu', 'product', 'produk', 'beli'],
