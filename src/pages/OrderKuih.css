@@ -269,16 +269,20 @@
 
 .size-options-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
   margin-bottom: 1.5rem;
 }
 
 .size-card {
   width: 100%;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   border: 2px solid #E2E8F0;
   border-radius: 12px;
-  padding: 1.25rem 1rem;
+  padding: 1.25rem 0.75rem;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -292,9 +296,9 @@
 }
 
 .size-card.active {
-  border-color: #047857;
+  border: 3px solid #047857;
   background: #ECFDF5;
-  box-shadow: 0 4px 12px rgba(4, 120, 87, 0.15);
+  box-shadow: 0 6px 16px rgba(4, 120, 87, 0.2);
 }
 
 .size-card:focus-visible {
@@ -304,20 +308,20 @@
 
 .size-title {
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: 1.2rem;
   color: #0F172A;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.45rem;
 }
 
 .size-slices {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   color: #64748B;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.75rem;
 }
 
 .size-price {
   font-weight: 800;
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   color: #047857;
 }
 
@@ -588,10 +592,22 @@
   .order-grid-layout {
     grid-template-columns: 1fr;
   }
+  .size-options-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
   .order-summary-box {
     position: static;
   }
   .qty-notes-row {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .size-options-grid {
+    grid-template-columns: 1fr;
+  }
+  .size-card {
+    min-height: 130px;
   }
 }
