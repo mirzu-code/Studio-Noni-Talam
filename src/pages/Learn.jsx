@@ -1,59 +1,195 @@
 import React, { useState } from 'react';
 import './Learn.css';
 
-// Step-by-step kuih talam cooking game
-const GAME_STEPS = [
+const GAME_RECIPES = [
   {
-    title: 'Kisar daun pandan',
-    instruction: 'Masukkan daun pandan dan air ke dalam pengisar untuk menyediakan jus pandan asli.',
-    target: 'bowl',
-    targetLabel: 'Mangkuk pengisar',
-    items: [
-      { id: 'pandan', name: 'Daun pandan', emoji: '🌿' },
+    id: 'pandan',
+    name: 'Talam Pandan Asli',
+    description: 'Pulut santan dengan kastard pandan harum.',
+    emoji: '🌿',
+    layers: ['green', 'white'],
+    prepTitle: 'Kisar jus pandan',
+    prepInstruction: 'Masukkan daun pandan dan air ke dalam pengisar untuk menyediakan jus pandan asli.',
+    prepItems: [
+      { id: 'pandan-leaves', name: 'Daun pandan', emoji: '🌿' },
       { id: 'water', name: 'Air', emoji: '💧' }
     ],
-    action: 'Kisar jus pandan'
-  },
-  {
-    title: 'Sediakan lapisan pulut',
-    instruction: 'Gaulkan pulut dengan santan pekat dan secubit garam sebelum dikukus separuh masak.',
-    target: 'bowl',
-    targetLabel: 'Mangkuk adunan',
-    items: [
+    prepAction: 'Kisar jus pandan',
+    baseTitle: 'Sediakan lapisan pulut',
+    baseInstruction: 'Gaulkan pulut dengan santan pekat dan secubit garam sebelum dikukus separuh masak.',
+    baseItems: [
       { id: 'glutinous-rice', name: 'Beras pulut', emoji: '🍚' },
       { id: 'coconut-milk', name: 'Santan + garam', emoji: '🥥' }
     ],
-    action: 'Gaul dan kukus pulut'
+    baseAction: 'Gaul dan kukus separuh masak',
+    compactBase: true,
+    layerTitle: 'Tambah lapisan pandan',
+    layerInstruction: 'Tuangkan adunan kastard pandan di atas tapak pulut yang telah dipadatkan.',
+    layerAction: 'Tuang adunan pandan',
+    layerItems: [
+      { id: 'pandan-custard', name: 'Adunan pandan', emoji: '🥣' }
+    ]
   },
   {
-    title: 'Padatkan tapak pulut',
-    instruction: 'Pindahkan pulut separuh masak ke dalam loyang dan tekan hingga padat.',
-    target: 'tray',
-    targetLabel: 'Loyang',
-    items: [
-      { id: 'spatula', name: 'Pulut separuh masak', emoji: '🍚' }
+    id: 'keladi',
+    name: 'Talam Keladi Berlauk',
+    description: 'Keladi segar, sambal udang kering dan bawang goreng.',
+    emoji: '🍠',
+    layers: ['white', 'gold'],
+    prepTitle: 'Potong keladi segar',
+    prepInstruction: 'Potong keladi segar menjadi kiub kecil untuk adunan talam.',
+    prepItems: [
+      { id: 'taro', name: 'Keladi segar', emoji: '🍠' }
     ],
-    action: 'Tekan dan padatkan'
+    prepAction: 'Sediakan keladi',
+    baseTitle: 'Gaul adunan keladi',
+    baseInstruction: 'Gaulkan keladi dengan adunan tepung lembut.',
+    baseTarget: 'tray',
+    baseTargetLabel: 'Loyang kuih',
+    baseItems: [
+      { id: 'taro-batter', name: 'Adunan tepung', emoji: '🥣' }
+    ],
+    layerTitle: 'Tabur lauk rangup',
+    layerInstruction: 'Lengkapkan talam dengan sambal udang kering dan bawang goreng.',
+    layerAction: 'Tabur lauk rangup',
+    layerAfterSteam: true,
+    layerItems: [
+      { id: 'dried-shrimp', name: 'Sambal udang kering', emoji: '🦐' },
+      { id: 'fried-onion', name: 'Bawang goreng', emoji: '🧅' }
+    ]
   },
   {
-    title: 'Tambah lapisan pandan',
-    instruction: 'Tuangkan adunan kastard pandan di atas tapak pulut yang telah dipadatkan.',
+    id: 'suji',
+    name: 'Talam Suji Gula Melaka',
+    description: 'Suji keemasan, gula Melaka dan lapisan santan.',
+    emoji: '🌾',
+    layers: ['gold', 'white'],
+    prepTitle: 'Sediakan adunan suji',
+    prepInstruction: 'Satukan suji keemasan dengan gula Melaka asli.',
+    prepItems: [
+      { id: 'suji', name: 'Suji', emoji: '🌾' },
+      { id: 'palm-sugar', name: 'Gula Melaka', emoji: '🟤' }
+    ],
+    prepAction: 'Gaul suji dan gula',
+    baseTitle: 'Sediakan lapisan santan',
+    baseInstruction: 'Tambah adunan santan pekat untuk lapisan talam yang berkilau.',
+    baseItems: [
+      { id: 'thick-coconut-milk', name: 'Santan pekat', emoji: '🥥' }
+    ],
+    baseAction: 'Tambah santan',
+    layerTitle: 'Susun lapisan suji',
+    layerInstruction: 'Tuangkan adunan suji keemasan dan lapisan santan ke dalam loyang.',
+    layerAction: 'Susun lapisan suji',
+    layerItems: [
+      { id: 'suji-batter', name: 'Adunan suji', emoji: '🥣' }
+    ]
+  },
+  {
+    id: 'cendol',
+    name: 'Talam Cendol Santan',
+    description: 'Cendol pandan kenyal dengan lapisan gula Melaka.',
+    emoji: '🍃',
+    layers: ['green', 'white', 'gold'],
+    prepTitle: 'Sediakan lapisan cendol',
+    prepInstruction: 'Masukkan butiran cendol pandan ke dalam lapisan bawah.',
+    prepItems: [
+      { id: 'cendol', name: 'Cendol pandan', emoji: '🍃' }
+    ],
+    prepAction: 'Sediakan cendol',
+    baseTitle: 'Tambah lapisan santan',
+    baseInstruction: 'Padankan cendol dengan lapisan santan sawit.',
+    baseItems: [
+      { id: 'palm-coconut-milk', name: 'Santan sawit', emoji: '🥥' }
+    ],
+    baseAction: 'Tambah lapisan santan',
+    layerTitle: 'Tuang gula Melaka',
+    layerInstruction: 'Akhiri lapisan dengan gula Melaka pekat.',
+    layerAction: 'Tuang gula Melaka',
+    layerItems: [
+      { id: 'thick-palm-sugar', name: 'Gula Melaka pekat', emoji: '🟤' }
+    ]
+  },
+  {
+    id: 'daging',
+    name: 'Talam Berlauk Daging',
+    description: 'Daging kisar berempah, cili segar dan daun sup.',
+    emoji: '🍲',
+    layers: ['white', 'gold', 'green'],
+    prepTitle: 'Sediakan lauk berempah',
+    prepInstruction: 'Sediakan daging kisar berempah bersama cili potong dan daun sup.',
+    prepItems: [
+      { id: 'minced-beef', name: 'Daging kisar', emoji: '🍲' },
+      { id: 'fresh-chilli', name: 'Cili segar', emoji: '🌶️' },
+      { id: 'celery-leaves', name: 'Daun sup', emoji: '🌿' }
+    ],
+    prepAction: 'Gaul bahan lauk',
+    baseTitle: 'Sediakan tapak talam',
+    baseInstruction: 'Tuang adunan talam lembut ke dalam loyang.',
+    baseTarget: 'tray',
+    baseTargetLabel: 'Loyang kuih',
+    baseItems: [
+      { id: 'soft-batter', name: 'Adunan talam', emoji: '🥣' }
+    ],
+    baseAction: 'Tuang adunan',
+    layerTitle: 'Tambah lauk di atas',
+    layerInstruction: 'Taburkan campuran daging berempah di atas adunan talam.',
+    layerAction: 'Tambah lauk',
+    layerItems: [
+      { id: 'spiced-topping', name: 'Lauk berempah', emoji: '🍲' }
+    ]
+  }
+];
+
+const createGameSteps = (recipe) => {
+  const steps = [
+    {
+      title: recipe.prepTitle,
+      instruction: recipe.prepInstruction,
+      target: 'bowl',
+      targetLabel: 'Mangkuk adunan',
+      items: recipe.prepItems,
+      action: recipe.prepAction
+    },
+    {
+      title: recipe.baseTitle,
+      instruction: recipe.baseInstruction,
+      target: recipe.baseTarget || 'bowl',
+      targetLabel: recipe.baseTargetLabel || 'Mangkuk adunan',
+      items: recipe.baseItems,
+      action: recipe.baseAction || 'Gaul adunan'
+    }
+  ];
+
+  if (recipe.compactBase) {
+    steps.push({
+      title: 'Padatkan tapak pulut',
+      instruction: 'Tekan pulut separuh masak di dalam loyang hingga padat sebelum menambah lapisan pandan.',
+      target: 'tray',
+      targetLabel: 'Loyang pulut',
+      items: [
+        { id: 'pandan-pulut-base', name: 'Tapak pulut', emoji: '🍚' }
+      ],
+      action: 'Tekan dan padatkan'
+    });
+  }
+
+  const layerStep = {
+    title: recipe.layerTitle,
+    instruction: recipe.layerInstruction,
     target: 'tray',
     targetLabel: 'Loyang kuih',
-    items: [
-      { id: 'pandan-custard', name: 'Adunan pandan', emoji: '🥣' }
-    ],
-    action: 'Tuang adunan pandan'
-  },
-  {
+    items: recipe.layerItems,
+    action: recipe.layerAction || 'Susun lapisan'
+  };
+  const steamStep = {
     title: 'Kukus hingga masak',
     instruction: 'Kukus dengan api sederhana kecil dan lap penutup kukusan berkala supaya permukaan kuih kekal licin.',
     target: 'steamer',
     targetLabel: 'Pengukus',
     items: [],
     action: 'Kukus kuih'
-  },
-  {
+  };
+  const finishStep = {
     title: 'Sejukkan dan potong',
     instruction: 'Sejukkan kuih sepenuhnya pada suhu bilik (3–4 jam), kemudian gunakan pisau plastik atau pisau yang disapu minyak.',
     target: 'cake',
@@ -63,23 +199,51 @@ const GAME_STEPS = [
     ],
     action: 'Potong kuih talam',
     needsCooling: true
-  }
-];
+  };
+
+  return recipe.layerAfterSteam
+    ? [...steps, steamStep, layerStep, finishStep]
+    : [...steps, layerStep, steamStep, finishStep];
+};
 
 const Learn = () => {
   const [activeTab, setActiveTab] = useState('video'); // 'video' | 'game' | 'modules'
 
   // Game state
+  const [selectedRecipeId, setSelectedRecipeId] = useState(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [placedIngredients, setPlacedIngredients] = useState([]);
   const [isCooled, setIsCooled] = useState(false);
   const [gameOver, setGameOver] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [gameFeedback, setGameFeedback] = useState('Pilih kuih kegemaran untuk mula bermain.');
 
-  const currentStep = GAME_STEPS[currentStepIndex];
+  const selectedRecipe = GAME_RECIPES.find((recipe) => recipe.id === selectedRecipeId);
+  const gameSteps = selectedRecipe ? createGameSteps(selectedRecipe) : [];
+  const currentStep = gameSteps[currentStepIndex];
+
+  const handleSelectRecipe = (recipeId) => {
+    setSelectedRecipeId(recipeId);
+    setCurrentStepIndex(0);
+    setPlacedIngredients([]);
+    setIsCooled(false);
+    setGameOver(false);
+    setIsProcessing(false);
+    setGameFeedback('Seret bahan ke dalam bekas atau tekan bahannya.');
+  };
 
   const handleIngredientDrop = (ingredientId) => {
-    if (!currentStep.items.some((item) => item.id === ingredientId)) return;
-    setPlacedIngredients((items) => items.includes(ingredientId) ? items : [...items, ingredientId]);
+    if (!currentStep || !currentStep.items.some((item) => item.id === ingredientId)) return;
+    if (placedIngredients.includes(ingredientId)) return;
+
+    const ingredient = currentStep.items.find((item) => item.id === ingredientId);
+    const allItemsPlaced = currentStep.items.every((item) =>
+      item.id === ingredientId || placedIngredients.includes(item.id)
+    );
+    setPlacedIngredients((items) => [...items, ingredientId]);
+    setGameFeedback(allItemsPlaced
+      ? 'Semua bahan sudah tersedia. Teruskan ke langkah seterusnya!'
+      : `${ingredient.name} sudah dimasukkan. Teruskan dengan bahan seterusnya.`);
   };
 
   const handleDrop = (event) => {
@@ -88,23 +252,33 @@ const Learn = () => {
   };
 
   const handleNextStep = () => {
+    if (!currentStep || isProcessing) return;
     const allItemsPlaced = currentStep.items.every((item) => placedIngredients.includes(item.id));
     if (!allItemsPlaced || (currentStep.needsCooling && !isCooled)) return;
 
-    if (currentStepIndex + 1 < GAME_STEPS.length) {
-      setCurrentStepIndex((step) => step + 1);
-      setPlacedIngredients([]);
-      setIsCooled(false);
-    } else {
-      setGameOver(true);
-    }
+    setIsProcessing(true);
+    setGameFeedback('Sedang menyediakan kuih…');
+    window.setTimeout(() => {
+      if (currentStepIndex + 1 < gameSteps.length) {
+        setCurrentStepIndex((step) => step + 1);
+        setPlacedIngredients([]);
+        setIsCooled(false);
+        setGameFeedback('Bagus! Ikuti langkah seterusnya.');
+      } else {
+        setGameOver(true);
+      }
+      setIsProcessing(false);
+    }, 650);
   };
 
   const handleRestartGame = () => {
+    setSelectedRecipeId(null);
     setCurrentStepIndex(0);
     setPlacedIngredients([]);
     setIsCooled(false);
     setGameOver(false);
+    setIsProcessing(false);
+    setGameFeedback('Pilih kuih kegemaran untuk mula bermain.');
   };
 
   const videoTutorials = [
@@ -258,23 +432,56 @@ const Learn = () => {
               <div className="game-header">
                 <div>
                   <span className="game-badge">🎮 Dapur Interaktif</span>
-                  <h2>Jom Buat Kuih Talam!</h2>
+                  <h2>{selectedRecipe ? `Jom Buat ${selectedRecipe.name}!` : 'Pilih Kuih Talam'}</h2>
                 </div>
+                {selectedRecipe && (
+                  <button className="change-recipe-btn" type="button" onClick={handleRestartGame} disabled={isProcessing}>
+                    Pilih kuih lain
+                  </button>
+                )}
               </div>
 
-              {!gameOver ? (
+              {!selectedRecipe ? (
+                <div className="recipe-select">
+                  <p className="recipe-select-intro">Pilih kuih yang ingin dibuat. Seret atau tekan bahan untuk siapkan setiap langkah.</p>
+                  <div className="recipe-grid">
+                    {GAME_RECIPES.map((recipe) => (
+                      <button
+                        key={recipe.id}
+                        className="recipe-card"
+                        type="button"
+                        onClick={() => handleSelectRecipe(recipe.id)}
+                      >
+                        <span className="recipe-icon" aria-hidden="true">{recipe.emoji}</span>
+                        <span className="recipe-layers" aria-label="Warna lapisan kuih">
+                          {recipe.layers.map((layer, index) => (
+                            <span key={`${recipe.id}-${index}`} className={`layer-swatch swatch-${layer}`} />
+                          ))}
+                        </span>
+                        <strong>{recipe.name}</strong>
+                        <span className="recipe-description">{recipe.description}</span>
+                        <span className="recipe-step-count">{createGameSteps(recipe).length} langkah</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="recipe-note">Bahan dan penerangan permainan diadaptasi daripada maklumat di laman ini. Sukatan penuh tidak dipaparkan.</p>
+                </div>
+              ) : !gameOver ? (
                 <div className="game-body">
                   <div className="game-progress-bar">
                     <div 
                       className="progress-fill" 
-                      style={{ width: `${((currentStepIndex + 1) / GAME_STEPS.length) * 100}%` }}
+                      style={{ width: `${((currentStepIndex + 1) / gameSteps.length) * 100}%` }}
                     />
                   </div>
-                  <div className="step-count">Langkah {currentStepIndex + 1} daripada {GAME_STEPS.length}</div>
+                  <div className="game-step-meta">
+                    <span className="step-count">Langkah {currentStepIndex + 1} daripada {gameSteps.length}</span>
+                    <span className="game-recipe-tag">{selectedRecipe.name}</span>
+                  </div>
                   <h3 className="game-title">{currentStep.title}</h3>
                   <p className="game-prompt">{currentStep.instruction}</p>
 
-                  <div className={`cooking-scene scene-${currentStep.target}`}>
+                  <div className={`cooking-scene scene-${currentStep.target} ${isProcessing ? 'processing' : ''}`}>
                     <div className="scene-shelf" aria-hidden="true">
                       <span>🫙</span><span>🥄</span><span>🧂</span>
                     </div>
@@ -297,11 +504,19 @@ const Learn = () => {
                       </div>
                       <span className="target-label">{currentStep.targetLabel}</span>
                     </div>
+                    {isProcessing && <span className="scene-action" aria-live="polite">✨</span>}
                   </div>
 
                   {currentStep.needsCooling && !isCooled && (
-                    <button className="cooling-btn" type="button" onClick={() => setIsCooled(true)}>
-                      ❄️ Kuih sudah sejuk sepenuhnya
+                    <button
+                      className="cooling-btn"
+                      type="button"
+                      onClick={() => {
+                        setIsCooled(true);
+                        setGameFeedback('Kuih sudah sejuk. Sekarang potong dengan pisau plastik.');
+                      }}
+                    >
+                      Kuih sudah sejuk sepenuhnya
                     </button>
                   )}
 
@@ -330,39 +545,35 @@ const Learn = () => {
                     <div className="steam-tip">Api sederhana kecil membantu menghasilkan permukaan kuih yang licin.</div>
                   )}
 
-                  <p className="game-interaction-hint">
-                    {currentStep.items.length > 0
-                      ? 'Seret bahan ke dalam bekas atau tekan bahannya.'
-                      : 'Ikuti arahan dan mulakan proses mengukus.'}
-                  </p>
+                  <p className="game-feedback" aria-live="polite">{gameFeedback}</p>
 
                   <button
                     className="next-step-btn"
                     type="button"
                     onClick={handleNextStep}
-                    disabled={
+                    disabled={isProcessing ||
                       !currentStep.items.every((item) => placedIngredients.includes(item.id)) ||
                       (currentStep.needsCooling && !isCooled)
                     }
                   >
-                    {currentStep.action} ➜
+                    {isProcessing ? 'Sedang diproses…' : `${currentStep.action} ➜`}
                   </button>
                 </div>
               ) : (
                 <div className="game-result">
                   <div className="finished-kuih" aria-hidden="true">
-                    <span />
-                    <span />
-                    <span />
+                    {selectedRecipe.layers.map((layer, index) => (
+                      <span key={`${layer}-${index}`} className={`finished-layer layer-${layer}`} />
+                    ))}
                   </div>
-                  <h3>Kuih Talam Siap!</h3>
+                  <h3>{selectedRecipe.name} Siap!</h3>
                   <p className="result-msg">
-                    Hebat! Anda sudah menyediakan jus pandan, membina lapisan pulut dan pandan, mengukus, menyejukkan, serta memotong kuih talam.
+                    Hebat! Anda sudah menyiapkan lapisan, mengukus, menyejukkan dan memotong {selectedRecipe.name}.
                   </p>
 
                   <div className="game-result-actions">
                     <button className="restart-btn" type="button" onClick={handleRestartGame}>
-                      🔄 Main Semula
+                      Buat kuih lain
                     </button>
                     <a href="/" className="book-studio-btn">
                       🏛️ Tempah Kelas Bengkel Studio

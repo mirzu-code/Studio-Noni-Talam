@@ -58,7 +58,7 @@ const answers = [
   },
   {
     keywords: ['learn', 'tutorial', 'recipe', 'game', 'belajar', 'video', 'kelas memasak'],
-    text: 'The Learn page has tutorials, learning notes, and an interactive six-step kuih talam cooking game. Add or drag ingredients through pandan preparation, the pulut base, steaming, cooling, and cutting until your kuih is ready.'
+    text: 'The Learn page has tutorials, learning notes, and an interactive kuih-making game with five varieties: pandan, keladi, suji gula Melaka, cendol, and meat. Choose one, then add or drag ingredients through the cooking steps until it is ready.'
   },
   {
     keywords: ['order', 'buy', 'delivery', 'pickup', 'pick up', 'kuih', 'menu', 'product', 'produk', 'beli'],
