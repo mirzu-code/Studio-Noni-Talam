@@ -1,240 +1,202 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import './ChatWidget.css';
+
+const quickQuestions = {
+  '/': [
+    'How do I book a studio class?',
+    'What are the class prices?',
+    'Which days are classes available?',
+    'How do I contact you?'
+  ],
+  '/tempah-kuih': [
+    'What kuih can I order?',
+    'What sizes are available?',
+    'How do I place an order?'
+  ],
+  '/product': [
+    'What products do you sell?',
+    'Do you sell kuih talam?',
+    'How do I contact you?'
+  ],
+  '/learn': [
+    'What can I learn on this page?',
+    'Are there kuih talam tutorials?',
+    'How do I book a studio class?'
+  ],
+  '/checkout': [
+    'How do I complete my booking?',
+    'How do I send my payment receipt?',
+    'How do I contact you?'
+  ]
+};
+
+const answers = [
+  {
+    keywords: ['class price', 'package price', 'studio price', 'how much', 'harga kelas', 'harga pakej'],
+    text: 'Studio packages on the website are RM100 for 1 person, RM180 for 2, RM250 for 3, and RM300 for 4 people.'
+  },
+  {
+    keywords: ['book', 'booking', 'class', 'studio', 'session', 'tempah kelas'],
+    text: 'Choose a studio package, date, and time on the Studio page, then enter your details to continue to checkout. Classes are available Monday to Saturday.'
+  },
+  {
+    keywords: ['schedule', 'time', 'slot', 'available day', 'day', 'open', 'weekend', 'hari', 'waktu', 'jadual'],
+    text: 'The Studio page lists sessions Monday to Saturday at 10:00 AM, 11:00 AM, 2:00 PM, 4:00 PM, and 6:00 PM. Availability depends on the date and remaining places shown on the booking form.'
+  },
+  {
+    keywords: ['capacity', 'full', 'spots', 'per slot', 'remaining places', 'people per', 'orang', 'penuh'],
+    text: 'The Studio page allows up to 6 people per time slot and shows remaining places after you choose a date.'
+  },
+  {
+    keywords: ['size', '8x8', '9x9', '10x10', 'saiz'],
+    text: 'The kuih ordering page offers 8×8, 9×9, and 10×10 sizes for kuih with size options. The page shows the current price for each kuih and size.'
+  },
+  {
+    keywords: ['order', 'buy', 'delivery', 'pickup', 'pick up', 'kuih', 'menu', 'product', 'produk', 'beli'],
+    text: 'You can browse kuih and place an order on the Order Kuih page. The Products page also lists kuih talam, premix, baking equipment, and gift boxes. Delivery details and prices are shown on the order page.'
+  },
+  {
+    keywords: ['pay', 'payment', 'receipt', 'checkout', 'bayar', 'pembayaran'],
+    text: 'Continue from your booking or kuih order to the website checkout for payment instructions. For studio bookings, the checkout page asks you to send your receipt through WhatsApp.'
+  },
+  {
+    keywords: ['learn', 'tutorial', 'recipe', 'game', 'belajar', 'video', 'kelas memasak'],
+    text: 'The Learn page has kuih talam tutorial links, learning notes, and an interactive mini game about making kuih talam.'
+  },
+  {
+    keywords: ['contact', 'whatsapp', 'phone', 'number', 'hubungi', 'telefon'],
+    text: 'You can contact Studio Noni Talam on WhatsApp at 018-316 8944.'
+  }
+];
+
+const getAnswer = (question) => {
+  const normalized = question.toLowerCase();
+  const match = answers.find(({ keywords }) =>
+    keywords.some((keyword) => normalized.includes(keyword))
+  );
+
+  return match?.text || 'I can only answer using information on this website. Try asking about studio bookings, kuih orders, products, or tutorials. For anything else, contact us on WhatsApp at 018-316 8944.';
+};
 
 const ChatWidget = () => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
-  const [animationState, setAnimationState] = useState('wave');
-  const [frameIndex, setFrameIndex] = useState(0);
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [spriteUrl, setSpriteUrl] = useState('/kuih-character.jpg');
+  const [messages, setMessages] = useState([
+    { type: 'bot', text: 'Hi! Good to see you. Ask me about our studio classes, kuih, or products.' }
+  ]);
+  const messagesEndRef = useRef(null);
+  const questions = quickQuestions[location.pathname] || quickQuestions['/'];
 
-  // Sprite sheet frame configuration (x, y positions in pixels)
-  const spriteFrames = {
-    wave: [
-      { x: 0, y: 0 },
-      { x: -150, y: 0 },
-    ],
-    eating: [
-      { x: -300, y: 0 },
-      { x: -450, y: 0 },
-      { x: -600, y: 0 },
-      { x: -750, y: 0 },
-      { x: -900, y: 0 },
-      { x: -1050, y: 0 },
-    ],
-    idle: [
-      { x: 0, y: -140 },
-    ],
-    clicked: [
-      { x: -450, y: -280 },
-    ],
-  };
-
-  // Page-specific questions
-  const pageQuestions = {
-    '/': [
-      'Pukul berapa sesi bermula?',
-      'Adakah slot penuh?',
-      'Berapa harga per orang?',
-      'Boleh tempah untuk berapa ramai?'
-    ],
-    '/checkout': [
-      'Kaedah pembayaran apa tersedia?',
-      'Bagaimana jika saya tak boleh hadir?',
-      'Berapa lama sesi?',
-      'Adakah tempat letak kereta?'
-    ],
-    '/admin': [
-      'Bagaimana untuk melihat semua tempahan?',
-      'Boleh ubah booking pelanggan?'
-    ]
-  };
-
-  const pageGreetings = {
-    '/': 'Assalamualaikum! 👋 Ada soalan tentang sesi kuih talam kami?',
-    '/checkout': 'Assalamualaikum! 💚 Ada soalan tentang pembayaran?',
-    '/admin': 'Selamat datang Admin! 📊 Ada yang boleh saya bantu?'
-  };
-
-  const currentQuestions = pageQuestions[location.pathname] || pageQuestions['/'];
-  const currentGreeting = pageGreetings[location.pathname] || pageGreetings['/'];
-
-  // Initialize messages when page changes
   useEffect(() => {
-    setMessages([
-      {
-        type: 'bot',
-        text: currentGreeting
-      }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isOpen]);
+
+  const sendMessage = (text) => {
+    const question = text.trim();
+    if (!question) return;
+
+    setMessages((currentMessages) => [
+      ...currentMessages,
+      { type: 'user', text: question },
+      { type: 'bot', text: getAnswer(question) }
     ]);
-  }, [location.pathname]);
-
-  // Prefer PNG (transparent) if present, fall back to JPG
-  useEffect(() => {
-    const tryPng = new Image();
-    tryPng.onload = () => setSpriteUrl('/kuih-character.png');
-    tryPng.onerror = () => setSpriteUrl('/kuih-character.jpg');
-    tryPng.src = '/kuih-character.png';
-  }, []);
-
-  // Cycle through animations
-  useEffect(() => {
-    const frames = spriteFrames[animationState];
-    if (!frames || frames.length === 0) return;
-
-    const interval = setInterval(() => {
-      setFrameIndex(prev => (prev + 1) % frames.length);
-    }, 200); // Change frame every 200ms for smooth animation
-    
-    return () => clearInterval(interval);
-  }, [animationState]);
-
-  // Auto cycle through animation states
-  useEffect(() => {
-    const stateInterval = setInterval(() => {
-      setAnimationState(prev => {
-        const states = ['wave', 'idle', 'eating', 'idle'];
-        const currentIndex = states.indexOf(prev);
-        return states[(currentIndex + 1) % states.length];
-      });
-      setFrameIndex(0);
-    }, 3000);
-    
-    return () => clearInterval(stateInterval);
-  }, []);
-
-  const handleWidgetClick = () => {
-    setIsOpen(!isOpen);
-    setAnimationState('clicked');
-    setFrameIndex(0);
-    setTimeout(() => {
-      setAnimationState('wave');
-      setFrameIndex(0);
-    }, 600);
-  };
-
-  const handleQuestionClick = (question) => {
-    // Add user message
-    setMessages(prev => [...prev, { type: 'user', text: question }]);
     setMessage('');
-    setAnimationState('eating');
-    setFrameIndex(0);
-
-    // Simulate bot response
-    setTimeout(() => {
-      setMessages(prev => [...prev, {
-        type: 'bot',
-        text: 'Terima kasih atas pertanyaan anda! Sila hubungi kami di WhatsApp 018-316 8944 untuk jawapan yang lebih detail. 😊'
-      }]);
-      setAnimationState('wave');
-      setFrameIndex(0);
-    }, 1500);
   };
 
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (!message.trim()) return;
-
-    // Add user message
-    setMessages(prev => [...prev, { type: 'user', text: message }]);
-    setMessage('');
-    setAnimationState('eating');
-    setFrameIndex(0);
-
-    // Simulate bot response
-    setTimeout(() => {
-      setMessages(prev => [...prev, {
-        type: 'bot',
-        text: 'Terima kasih atas pertanyaan anda! Sila hubungi kami di WhatsApp 018-316 8944 untuk jawapan yang lebih detail. 😊'
-      }]);
-      setAnimationState('wave');
-      setFrameIndex(0);
-    }, 1500);
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    sendMessage(message);
   };
-
-  const currentFrame = spriteFrames?.[animationState]?.[frameIndex] || null;
 
   return (
     <>
-      {/* Floating Chat Button - sprite animation (steps) */}
-      <div
+      <button
         className="chat-widget-button"
-        onClick={handleWidgetClick}
-        title="Klik untuk membuka soalan & jawapan"
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        aria-label={isOpen ? 'Close chat' : 'Open chat with the kuih assistant'}
+        aria-expanded={isOpen}
       >
-        <div
-          className={`sprite-anim ${animationState}`}
-          style={{
-            ['--frames']: spriteFrames[animationState]?.length || 1,
-            ['--fps']: 8,
-            backgroundImage: `url('${spriteUrl}')`
-          }}
+        <iframe
+          className="mascot-frame"
+          src="/kuih_3d.html?bare=1"
+          title="Animated kuih mascot"
+          tabIndex="-1"
+          aria-hidden="true"
         />
-      </div>
+      </button>
 
-      {/* Chat Window */}
       {isOpen && (
-        <div className="chat-window animate-slide-up">
-          <div className="chat-header">
-            <h3>💬 Tanya Kami!</h3>
-            <button 
-              className="close-btn" 
+        <section className="chat-window" aria-label="Noni Talam website assistant">
+          <header className="chat-header">
+            <div className="chat-brand">
+              <span className="chat-brand-icon" aria-hidden="true">✦</span>
+              <div>
+                <h2>Noni Talam</h2>
+                <p>Website guide</p>
+              </div>
+            </div>
+            <button
+              className="close-btn"
+              type="button"
               onClick={() => setIsOpen(false)}
+              aria-label="Close chat"
             >
-              ✕
+              ×
             </button>
-          </div>
+          </header>
 
-          <div className="chat-messages">
-            {messages.map((msg, idx) => (
-              <div key={idx} className={`message ${msg.type}`}>
-                {msg.type === 'bot' && <span className="bot-avatar">🍵</span>}
-                <div className="message-text">
-                  {msg.text}
-                </div>
+          <div className="chat-messages" aria-live="polite">
+            {messages.length === 1 && (
+              <div className="chat-welcome">
+                <span className="welcome-sparkle" aria-hidden="true">✦</span>
+                <h3>Good to see you.</h3>
+                <p>What would you like to know about Studio Noni Talam?</p>
+              </div>
+            )}
+            {messages.map((item, index) => (
+              <div key={`${index}-${item.type}`} className={`message ${item.type}`}>
+                {item.type === 'bot' && <span className="bot-avatar" aria-hidden="true">✦</span>}
+                <div className="message-text">{item.text}</div>
               </div>
             ))}
+            <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Question Buttons */}
-          <div className="quick-questions">
-            <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.5rem 0', fontWeight: 500 }}>
-              Pertanyaan Popular:
-            </p>
-            <div className="questions-grid">
-              {currentQuestions.map((question, idx) => (
+          {messages.length === 1 && (
+            <div className="quick-questions" aria-label="Suggested questions">
+              {questions.map((question) => (
                 <button
-                  key={idx}
+                  key={question}
                   className="question-btn"
-                  onClick={() => handleQuestionClick(question)}
+                  type="button"
+                  onClick={() => sendMessage(question)}
                 >
                   {question}
                 </button>
               ))}
             </div>
-          </div>
+          )}
 
-          <form onSubmit={handleSendMessage} className="chat-input-form">
+          <form onSubmit={handleSubmit} className="chat-input-form">
             <input
               type="text"
-              placeholder="Tulis soalan anda..."
+              placeholder="Ask about classes, kuih, or products"
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(event) => setMessage(event.target.value)}
               className="chat-input"
-              maxLength="150"
+              maxLength={300}
+              aria-label="Your question"
             />
-            <button type="submit" className="send-btn">Hantar</button>
+            <button type="submit" className="send-btn" aria-label="Send message" disabled={!message.trim()}>
+              ↑
+            </button>
           </form>
 
-          <div className="chat-footer">
-            <p style={{ fontSize: '0.75rem', color: '#94A3B8' }}>
-              💚 Layanan pelanggan · Isnin-Sabtu: 10:00 AM - 6:00 PM
-            </p>
-          </div>
-        </div>
+          <p className="chat-footer">Answers are based on information on this website.</p>
+        </section>
       )}
     </>
   );

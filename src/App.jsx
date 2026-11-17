@@ -9,6 +9,7 @@ import Checkout from './pages/Checkout';
 import Admin from './pages/Admin';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
+import ChatWidget from './components/ChatWidget';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
         </main>
         <Footer />
       </div>
+      <ChatWidget />
     </Router>
   );
 }
