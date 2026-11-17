@@ -258,6 +258,7 @@ const Learn = () => {
   const [isStirring, setIsStirring] = useState(false);
   const [pressProgress, setPressProgress] = useState(0);
   const [isPressing, setIsPressing] = useState(false);
+  const [stirToolPosition, setStirToolPosition] = useState(null);
   const [selectedHeat, setSelectedHeat] = useState('');
   const [heatProgress, setHeatProgress] = useState(0);
   const [isHeating, setIsHeating] = useState(false);
@@ -340,10 +341,16 @@ const Learn = () => {
   const areCurrentStepItemsPlaced = currentStep
     ? currentStep.items.every((item) => placedIngredients.includes(item.id))
     : false;
+  const hasBatter = Boolean(
+    currentStep &&
+    currentStep.target === 'bowl' &&
+    placedIngredients.length > 0
+  );
 
   const resetStepActions = () => {
     setStirProgress(0);
     setIsStirring(false);
+    setStirToolPosition(null);
     setPressProgress(0);
     setIsPressing(false);
     setSelectedHeat('');
@@ -397,6 +404,13 @@ const Learn = () => {
       centerY: targetBounds.top + targetBounds.height / 2
     };
     if (currentStep.action === 'stir' || currentStep.action === 'blend') setIsStirring(true);
+    if (currentStep.action === 'stir') {
+      setStirToolPosition({
+        x: event.clientX - targetBounds.left,
+        y: event.clientY - targetBounds.top,
+        angle: -35
+      });
+    }
     if (currentStep.action === 'press') setIsPressing(true);
   };
 
@@ -406,6 +420,14 @@ const Learn = () => {
 
     const deltaX = event.clientX - gesture.x;
     const deltaY = event.clientY - gesture.y;
+    if (currentStep.action === 'stir') {
+      const targetBounds = event.currentTarget.getBoundingClientRect();
+      setStirToolPosition({
+        x: event.clientX - targetBounds.left,
+        y: event.clientY - targetBounds.top,
+        angle: Math.atan2(deltaY, deltaX) * 180 / Math.PI
+      });
+    }
     if (currentStep.action === 'stir' || currentStep.action === 'blend') {
       const previousRadius = Math.hypot(gesture.x - gesture.centerX, gesture.y - gesture.centerY);
       const currentRadius = Math.hypot(event.clientX - gesture.centerX, event.clientY - gesture.centerY);
@@ -713,7 +735,7 @@ const Learn = () => {
                       {currentStep.action === 'cut' ? '🔪　🍰　🥣' : '🥄　🍴　🥣'}
                     </div>
                     <div
-                      className={`cooking-target target-${currentStep.target} ${['stir', 'blend', 'press', 'cut'].includes(currentStep.action) && areCurrentStepItemsPlaced ? 'gesture-ready' : ''} ${isStirring ? 'stirring' : ''} ${isPressing ? 'pressing' : ''}`}
+                      className={`cooking-target target-${currentStep.target} ${hasBatter ? 'has-batter' : ''} ${['stir', 'blend', 'press', 'cut'].includes(currentStep.action) && areCurrentStepItemsPlaced ? 'gesture-ready' : ''} ${isStirring ? 'stirring' : ''} ${isPressing ? 'pressing' : ''}`}
                       onDragOver={(event) => event.preventDefault()}
                       onDrop={handleDrop}
                       onPointerDown={handleGestureStart}
@@ -731,17 +753,34 @@ const Learn = () => {
                               ? 'Seret pisau melintasi kuih untuk memotong'
                               : `Letak bahan di ${currentStep.targetLabel}`}
                     >
-                      <span className="target-emoji" aria-hidden="true">
-                        {currentStep.action === 'blend'
-                          ? '🌀'
-                          : currentStep.target === 'bowl'
-                            ? '🥣'
-                            : currentStep.target === 'tray'
-                              ? '🍱'
-                              : currentStep.target === 'steamer'
-                                ? '♨️'
-                                : '🍰'}
-                      </span>
+                      {currentStep.target !== 'bowl' && (
+                        <span className="target-emoji" aria-hidden="true">
+                          {currentStep.target === 'tray'
+                            ? '🍱'
+                            : currentStep.target === 'steamer'
+                              ? '♨️'
+                              : '🍰'}
+                        </span>
+                      )}
+                      {hasBatter && (
+                        <div className={`bowl-batter ${isStirring && currentStep.action === 'stir' ? 'mixing' : ''}`} aria-hidden="true" />
+                      )}
+                      {currentStep.action === 'stir' && areCurrentStepItemsPlaced && (
+                        <svg
+                          className={`stir-spoon ${isStirring ? 'moving' : ''}`}
+                          style={stirToolPosition ? {
+                            left: `${stirToolPosition.x}px`,
+                            top: `${stirToolPosition.y}px`,
+                            transform: `translate(-10px, -50%) rotate(${stirToolPosition.angle}deg)`
+                          } : undefined}
+                          viewBox="0 0 90 24"
+                          aria-hidden="true"
+                        >
+                          <ellipse cx="11" cy="12" rx="9" ry="6" fill="#d4a557" stroke="#805d2b" strokeWidth="1.5" />
+                          <path d="M18 12H84" stroke="#805d2b" strokeWidth="4" strokeLinecap="round" />
+                          <path d="M20 10.5H82" stroke="#f3d996" strokeWidth="1" strokeLinecap="round" />
+                        </svg>
+                      )}
                       <div className="target-contents" aria-live="polite">
                         {placedIngredients.map((id) => {
                           const item = currentStep.items.find((ingredient) => ingredient.id === id);

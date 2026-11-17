@@ -285,21 +285,23 @@ const OrderKuih = () => {
                   {selectedKuih.hasSizeOptions ? (
                     <div className="size-selection-block">
                       <label className="section-label">Pilih Saiz Loyang:</label>
-                      <div className="size-options-grid">
+                      <div className="size-options-grid" role="group" aria-label="Pilih saiz loyang">
                         {[
                           { size: '8x8', label: '8" x 8" (Kecil)', slices: '± 25-36 Potong', price: selectedKuih.prices?.['8x8'] || 35 },
                           { size: '9x9', label: '9" x 9" (Sederhana)', slices: '± 36-49 Potong', price: selectedKuih.prices?.['9x9'] || 45 },
                           { size: '10x10', label: '10" x 10" (Besar/Paling Popular)', slices: '± 50-64 Potong', price: selectedKuih.prices?.['10x10'] || 55 }
                         ].map((sz) => (
-                          <div
+                          <button
                             key={sz.size}
+                            type="button"
                             className={`size-card ${selectedSize === sz.size ? 'active' : ''}`}
                             onClick={() => setSelectedSize(sz.size)}
+                            aria-pressed={selectedSize === sz.size}
                           >
                             <div className="size-title">{sz.label}</div>
                             <div className="size-slices">{sz.slices}</div>
                             <div className="size-price">RM {sz.price.toFixed(2)}</div>
-                          </div>
+                          </button>
                         ))}
                       </div>
                     </div>

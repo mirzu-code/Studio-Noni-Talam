@@ -629,6 +629,78 @@
   border-radius: 50%;
 }
 
+.target-bowl.has-batter::after {
+  background: linear-gradient(145deg, #e8d18c, #c99e4a);
+}
+
+.bowl-batter {
+  position: absolute;
+  top: 24px;
+  z-index: 0;
+  width: 84%;
+  height: 39px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 28% 25%, rgba(255, 249, 218, .9) 0 4%, transparent 5%),
+    linear-gradient(165deg, #f3e5b0, #d6b45e 65%, #b9883e);
+  border: 2px solid #fff7df;
+  border-radius: 50%;
+  box-shadow: inset 0 3px 5px rgba(112, 78, 26, .18), 0 2px 3px rgba(46, 83, 44, .14);
+  animation: batter-appear .3s ease-out both;
+}
+
+.bowl-batter::before,
+.bowl-batter::after {
+  position: absolute;
+  content: '';
+  border-radius: 50%;
+}
+
+.bowl-batter::before {
+  inset: 5px 12%;
+  border-top: 3px solid rgba(255, 250, 221, .8);
+  border-bottom: 2px solid rgba(170, 123, 48, .3);
+  transform: rotate(-8deg);
+}
+
+.bowl-batter::after {
+  top: 5px;
+  left: 44%;
+  width: 26px;
+  height: 23px;
+  border: 2px solid rgba(255, 249, 218, .82);
+  border-left-color: transparent;
+  transform: rotate(-18deg);
+}
+
+.bowl-batter.mixing::before {
+  animation: batter-wobble .28s ease-in-out infinite alternate;
+}
+
+.bowl-batter.mixing::after {
+  animation: batter-swirl .5s linear infinite;
+}
+
+.stir-spoon {
+  position: absolute;
+  top: 55%;
+  left: 50%;
+  z-index: 3;
+  width: 88px;
+  height: 24px;
+  overflow: visible;
+  pointer-events: none;
+  filter: drop-shadow(0 3px 2px rgba(68, 46, 20, .35));
+  transform: translate(-10px, -50%) rotate(-35deg);
+  transform-box: view-box;
+  transform-origin: 11px 12px;
+  transition: left .04s linear, top .04s linear;
+}
+
+.has-batter .target-contents {
+  display: none;
+}
+
 .target-emoji {
   margin-top: 14px;
   font-size: 44px;
@@ -674,6 +746,21 @@
 @keyframes stirring-spoon {
   from { transform: rotate(-15deg) scale(1.02); }
   to { transform: rotate(15deg) scale(1.1); }
+}
+
+@keyframes batter-appear {
+  from { opacity: 0; transform: scale(.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes batter-wobble {
+  from { transform: rotate(-12deg) translateX(-3px); }
+  to { transform: rotate(8deg) translateX(3px); }
+}
+
+@keyframes batter-swirl {
+  from { transform: rotate(0deg) scale(.8); }
+  to { transform: rotate(360deg) scale(1.05); }
 }
 
 .target-label {

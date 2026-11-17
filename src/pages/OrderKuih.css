@@ -275,6 +275,7 @@
 }
 
 .size-card {
+  width: 100%;
   border: 2px solid #E2E8F0;
   border-radius: 12px;
   padding: 1.25rem 1rem;
@@ -282,6 +283,8 @@
   cursor: pointer;
   transition: all 0.2s ease;
   background: white;
+  color: inherit;
+  font: inherit;
 }
 
 .size-card:hover {
@@ -292,6 +295,11 @@
   border-color: #047857;
   background: #ECFDF5;
   box-shadow: 0 4px 12px rgba(4, 120, 87, 0.15);
+}
+
+.size-card:focus-visible {
+  outline: 3px solid #D4A72C;
+  outline-offset: 3px;
 }
 
 .size-title {
