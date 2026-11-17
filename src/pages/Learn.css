@@ -496,6 +496,7 @@
 
 .game-step-meta {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
@@ -517,6 +518,16 @@
   font-weight: 700;
   background: var(--game-green-soft);
   border: 1px solid #d5e5ce;
+  border-radius: 999px;
+}
+
+.game-stars {
+  padding: 5px 9px;
+  color: #80621f;
+  font-size: .72rem;
+  font-weight: 700;
+  background: var(--game-gold-soft);
+  border: 1px solid #e6d9af;
   border-radius: 999px;
 }
 
@@ -542,10 +553,11 @@
   place-items: center;
   isolation: isolate;
   background:
-    repeating-linear-gradient(90deg, rgba(43, 107, 60, .035) 0 44px, rgba(255, 255, 255, .6) 44px 88px),
-    linear-gradient(#f7f8ed 0 65%, #dfc06c 65% 100%);
+    radial-gradient(ellipse at 50% 32%, rgba(255, 255, 255, .88), transparent 55%),
+    linear-gradient(180deg, #e6e5dc 0%, #f5f2e9 63%, #b8a47f 64%, #c79a54 66%, #d7b16d 100%);
   border: 1px solid #e1d8b8;
   border-radius: 18px;
+  box-shadow: inset 0 0 35px rgba(70, 67, 47, .08);
 }
 
 .cooking-scene::before {
@@ -557,40 +569,10 @@
   height: 35%;
   content: '';
   background:
-    repeating-linear-gradient(0deg, transparent 0 20px, rgba(133, 102, 27, .12) 20px 22px),
-    linear-gradient(100deg, #c99e39, #e8cb72 45%, #c39435);
-  border-top: 5px solid #b98e32;
-}
-
-.scene-shelf {
-  position: absolute;
-  top: 14%;
-  right: 7%;
-  display: flex;
-  width: 30%;
-  height: 14px;
-  align-items: flex-end;
-  justify-content: space-around;
-  padding: 0 10px 8px;
-  background: #c49a3a;
-  border-radius: 2px;
-  box-shadow: 0 5px 0 rgba(99, 77, 29, .16);
-}
-
-.scene-shelf span {
-  font-size: 25px;
-}
-
-.scene-utensils {
-  position: absolute;
-  top: 10%;
-  left: 8%;
-  padding: 8px 13px;
-  color: var(--game-green-dark);
-  font-size: 23px;
-  background: rgba(255, 254, 249, .82);
-  border: 1px solid #e2d9bd;
-  border-radius: 9px;
+    repeating-linear-gradient(0deg, transparent 0 17px, rgba(111, 71, 34, .1) 17px 18px),
+    linear-gradient(100deg, #b27b40, #d6aa63 45%, #bd8848);
+  border-top: 5px solid #efe4ce;
+  box-shadow: inset 0 8px 12px rgba(91, 61, 31, .12);
 }
 
 .cooking-target {
@@ -605,100 +587,38 @@
   cursor: default;
 }
 
-.target-bowl::before {
+.target-bowl {
+  width: min(440px, 85vw);
+  height: 230px;
+  margin-top: -20px;
+}
+
+.bowl-vessel {
   position: absolute;
-  inset: 20px 0 17px;
-  z-index: -1;
-  content: '';
-  background: linear-gradient(135deg, #a9ca82, #6d9d53 70%, #4f8547);
-  border: 5px solid #fffef9;
-  border-radius: 12% 12% 42% 42% / 15% 15% 42% 42%;
-  box-shadow: 0 9px 0 rgba(46, 83, 44, .27), inset 0 8px 12px rgba(255,255,255,.4);
-}
-
-.target-bowl::after {
-  position: absolute;
-  top: 15px;
-  right: -2px;
-  left: -2px;
-  z-index: -1;
-  height: 48px;
-  content: '';
-  background: #8eb96c;
-  border: 5px solid #fffef9;
-  border-radius: 50%;
-}
-
-.target-bowl.has-batter::after {
-  background: linear-gradient(145deg, #e8d18c, #c99e4a);
-}
-
-.bowl-batter {
-  position: absolute;
-  top: 24px;
-  z-index: 0;
-  width: 84%;
-  height: 39px;
-  overflow: hidden;
-  background:
-    radial-gradient(ellipse at 28% 25%, rgba(255, 249, 218, .9) 0 4%, transparent 5%),
-    linear-gradient(165deg, #f3e5b0, #d6b45e 65%, #b9883e);
-  border: 2px solid #fff7df;
-  border-radius: 50%;
-  box-shadow: inset 0 3px 5px rgba(112, 78, 26, .18), 0 2px 3px rgba(46, 83, 44, .14);
-  animation: batter-appear .3s ease-out both;
-}
-
-.bowl-batter::before,
-.bowl-batter::after {
-  position: absolute;
-  content: '';
-  border-radius: 50%;
-}
-
-.bowl-batter::before {
-  inset: 5px 12%;
-  border-top: 3px solid rgba(255, 250, 221, .8);
-  border-bottom: 2px solid rgba(170, 123, 48, .3);
-  transform: rotate(-8deg);
-}
-
-.bowl-batter::after {
-  top: 5px;
-  left: 44%;
-  width: 26px;
-  height: 23px;
-  border: 2px solid rgba(255, 249, 218, .82);
-  border-left-color: transparent;
-  transform: rotate(-18deg);
-}
-
-.bowl-batter.mixing::before {
-  animation: batter-wobble .28s ease-in-out infinite alternate;
-}
-
-.bowl-batter.mixing::after {
-  animation: batter-swirl .5s linear infinite;
-}
-
-.stir-spoon {
-  position: absolute;
-  top: 55%;
-  left: 50%;
-  z-index: 3;
-  width: 88px;
-  height: 24px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   overflow: visible;
   pointer-events: none;
-  filter: drop-shadow(0 3px 2px rgba(68, 46, 20, .35));
-  transform: translate(-10px, -50%) rotate(-35deg);
-  transform-box: view-box;
-  transform-origin: 11px 12px;
-  transition: left .04s linear, top .04s linear;
+  filter: drop-shadow(0 11px 9px rgba(32, 49, 28, .22));
 }
 
-.has-batter .target-contents {
-  display: none;
+.unmixed-ingredients {
+  animation: ingredient-drop .35s ease-out both;
+}
+
+.batter-ripples.active path:nth-child(odd) {
+  animation: batter-flow .55s linear infinite;
+}
+
+.batter-ripples.active path:nth-child(even) {
+  animation: batter-flow .8s linear infinite reverse;
+}
+
+.spoon-motion.active {
+  animation: spoon-rock .15s ease-in-out infinite alternate;
+  transform-box: view-box;
+  transform-origin: 0 0;
 }
 
 .target-emoji {
@@ -709,10 +629,10 @@
 
 .target-contents {
   position: absolute;
-  top: 54px;
   display: flex;
   gap: 4px;
   font-size: 23px;
+  top: 54px;
 }
 
 .target-contents span {
@@ -729,10 +649,6 @@
   cursor: grabbing;
 }
 
-.cooking-target.stirring .target-emoji {
-  animation: stirring-spoon .25s ease-in-out infinite alternate;
-}
-
 .cooking-target.pressing .target-emoji {
   transform: scale(.88);
   transition: transform .1s ease;
@@ -743,24 +659,13 @@
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-@keyframes stirring-spoon {
-  from { transform: rotate(-15deg) scale(1.02); }
-  to { transform: rotate(15deg) scale(1.1); }
+@keyframes batter-flow {
+  to { stroke-dashoffset: -44; }
 }
 
-@keyframes batter-appear {
-  from { opacity: 0; transform: scale(.8); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes batter-wobble {
-  from { transform: rotate(-12deg) translateX(-3px); }
-  to { transform: rotate(8deg) translateX(3px); }
-}
-
-@keyframes batter-swirl {
-  from { transform: rotate(0deg) scale(.8); }
-  to { transform: rotate(360deg) scale(1.05); }
+@keyframes spoon-rock {
+  from { transform: rotate(-3deg); }
+  to { transform: rotate(3deg); }
 }
 
 .target-label {
@@ -865,13 +770,49 @@
 }
 
 .game-feedback {
-  min-height: 22px;
-  margin: 10px 0 14px;
+  margin: 0;
   color: var(--game-green-dark);
   font-size: .86rem;
   font-weight: 700;
-  text-align: center;
+  line-height: 1.4;
 }
+
+.game-cheer {
+  display: flex;
+  min-height: 52px;
+  max-width: 560px;
+  align-items: center;
+  gap: 12px;
+  margin: 12px auto 15px;
+  padding: 8px 14px;
+  background: linear-gradient(110deg, #f8f2df, #f1f6e9);
+  border: 1px solid #e6d9af;
+  border-radius: 16px;
+  box-shadow: 0 4px 10px rgba(70, 67, 47, .06);
+}
+
+.game-cheer-mascot {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  font-size: 24px;
+  background: #fffef9;
+  border: 1px solid #e6d9af;
+  border-radius: 50%;
+}
+
+.game-cheer.encouraging .game-cheer-mascot {
+  animation: chef-cheer .24s ease-in-out infinite alternate;
+}
+
+@keyframes chef-cheer {
+  from { transform: rotate(-8deg) translateY(1px); }
+  to { transform: rotate(8deg) translateY(-2px); }
+}
+
+
 
 .action-control,
 .heat-control {
@@ -1050,6 +991,9 @@
 .game-result {
   padding: 3.5rem 2rem;
   text-align: center;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(201, 159, 55, .13) 0 3px, transparent 4px),
+    radial-gradient(circle at 82% 17%, rgba(35, 107, 60, .12) 0 4px, transparent 5px);
 }
 
 .finished-kuih {
@@ -1281,11 +1225,6 @@
   .change-recipe-btn {
     padding: 8px 9px;
     font-size: .72rem;
-  }
-  .scene-utensils {
-    top: 8%;
-    left: 5%;
-    font-size: 18px;
   }
   .recipe-card {
     min-height: 180px;

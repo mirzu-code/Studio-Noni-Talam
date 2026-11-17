@@ -323,14 +323,14 @@ const Learn = () => {
   useEffect(() => {
     if (pressProgress === 100) {
       setIsPressing(false);
-      setGameFeedback('Bagus! Tapak kuih sudah padat.');
+      setGameFeedback('Bagus! Tapak kuih dah padat. ⭐');
     }
   }, [pressProgress]);
 
   useEffect(() => {
     if (heatProgress === 100) {
       setIsHeating(false);
-      setGameFeedback('Adunan sudah dipanaskan. Teruskan ke langkah seterusnya!');
+      setGameFeedback('Hore, kuih dah masak! Jom sambung. ✨');
     }
   }, [heatProgress]);
 
@@ -341,11 +341,25 @@ const Learn = () => {
   const areCurrentStepItemsPlaced = currentStep
     ? currentStep.items.every((item) => placedIngredients.includes(item.id))
     : false;
+  const isMixingStep = currentStep && (currentStep.action === 'stir' || currentStep.action === 'blend');
+  const showUnmixedIngredients = Boolean(
+    currentStep &&
+    currentStep.target === 'bowl' &&
+    placedIngredients.length > 0 &&
+    isMixingStep &&
+    stirProgress === 0
+  );
   const hasBatter = Boolean(
     currentStep &&
     currentStep.target === 'bowl' &&
-    placedIngredients.length > 0
+    placedIngredients.length > 0 &&
+    (!isMixingStep || stirProgress > 0)
   );
+  const batterPalette = ['pandan', 'cendol'].includes(selectedRecipe?.id)
+    ? { light: '#dcebb4', mid: '#9fbd68', dark: '#688b42', highlight: '#f5f9dc' }
+    : selectedRecipe?.id === 'suji'
+      ? { light: '#f6e3a2', mid: '#d5ad50', dark: '#a77c31', highlight: '#fff3c7' }
+      : { light: '#f2e7c7', mid: '#d7c18d', dark: '#ad9058', highlight: '#fff9e8' };
 
   const resetStepActions = () => {
     setStirProgress(0);
@@ -371,7 +385,7 @@ const Learn = () => {
     setGameOver(false);
     setIsProcessing(false);
     resetStepActions();
-    setGameFeedback('Seret bahan ke dalam bekas atau tekan bahannya.');
+    setGameFeedback('Jom masak! Tekan atau seret bahan ke dalam mangkuk.');
   };
 
   const handleIngredientDrop = (ingredientId) => {
@@ -383,9 +397,14 @@ const Learn = () => {
       item.id === ingredientId || placedIngredients.includes(item.id)
     );
     setPlacedIngredients((items) => [...items, ingredientId]);
+    const readyMessage = currentStep.action === 'stir'
+      ? 'Semua bahan dah masuk! Jom kacau dengan senduk.'
+      : currentStep.action === 'blend'
+        ? 'Semua bahan dah masuk! Jom kisar sampai sebati.'
+        : 'Semua bahan dah masuk! Teruskan ke langkah seterusnya.';
     setGameFeedback(allItemsPlaced
-      ? 'Semua bahan sudah tersedia. Teruskan ke langkah seterusnya!'
-      : `${ingredient.name} sudah dimasukkan. Teruskan dengan bahan seterusnya.`);
+      ? readyMessage
+      : `${ingredient.name} dah masuk. Masukkan bahan seterusnya!`);
   };
 
   const handleGestureStart = (event) => {
@@ -401,13 +420,15 @@ const Learn = () => {
       x: event.clientX,
       y: event.clientY,
       centerX: targetBounds.left + targetBounds.width / 2,
-      centerY: targetBounds.top + targetBounds.height / 2
+      centerY: targetBounds.top + targetBounds.height * (currentStep.target === 'bowl' ? 0.25 : 0.5),
+      radiusX: targetBounds.width * (currentStep.target === 'bowl' ? 143 / 420 : 0.35),
+      radiusY: targetBounds.height * (currentStep.target === 'bowl' ? 27 / 230 : 0.35)
     };
     if (currentStep.action === 'stir' || currentStep.action === 'blend') setIsStirring(true);
     if (currentStep.action === 'stir') {
       setStirToolPosition({
-        x: event.clientX - targetBounds.left,
-        y: event.clientY - targetBounds.top,
+        x: (event.clientX - targetBounds.left) / targetBounds.width * 420,
+        y: (event.clientY - targetBounds.top) / targetBounds.height * 230,
         angle: -35
       });
     }
@@ -423,17 +444,21 @@ const Learn = () => {
     if (currentStep.action === 'stir') {
       const targetBounds = event.currentTarget.getBoundingClientRect();
       setStirToolPosition({
-        x: event.clientX - targetBounds.left,
-        y: event.clientY - targetBounds.top,
+        x: (event.clientX - targetBounds.left) / targetBounds.width * 420,
+        y: (event.clientY - targetBounds.top) / targetBounds.height * 230,
         angle: Math.atan2(deltaY, deltaX) * 180 / Math.PI
       });
     }
     if (currentStep.action === 'stir' || currentStep.action === 'blend') {
-      const previousRadius = Math.hypot(gesture.x - gesture.centerX, gesture.y - gesture.centerY);
-      const currentRadius = Math.hypot(event.clientX - gesture.centerX, event.clientY - gesture.centerY);
-      if (previousRadius > 20 && currentRadius > 20) {
-        const previousAngle = Math.atan2(gesture.y - gesture.centerY, gesture.x - gesture.centerX);
-        const currentAngle = Math.atan2(event.clientY - gesture.centerY, event.clientX - gesture.centerX);
+      const previousX = (gesture.x - gesture.centerX) / gesture.radiusX;
+      const previousY = (gesture.y - gesture.centerY) / gesture.radiusY;
+      const currentX = (event.clientX - gesture.centerX) / gesture.radiusX;
+      const currentY = (event.clientY - gesture.centerY) / gesture.radiusY;
+      const previousRadius = Math.hypot(previousX, previousY);
+      const currentRadius = Math.hypot(currentX, currentY);
+      if (previousRadius > 0.35 && currentRadius > 0.35) {
+        const previousAngle = Math.atan2(previousY, previousX);
+        const currentAngle = Math.atan2(currentY, currentX);
         let rotation = currentAngle - previousAngle;
         if (rotation > Math.PI) rotation -= Math.PI * 2;
         if (rotation < -Math.PI) rotation += Math.PI * 2;
@@ -442,15 +467,15 @@ const Learn = () => {
         setStirProgress(progress);
         if (progress === 100) {
           setGameFeedback(currentStep.action === 'blend'
-            ? 'Bagus! Bahan sudah dikisar halus.'
-            : 'Bagus! Adunan sudah sebati.');
+            ? 'Hore! Bahan dah dikisar halus. ⭐'
+            : 'Wah, adunan dah sebati! ⭐');
         }
       }
     } else if (currentStep.action === 'cut' && Math.abs(deltaX) > Math.abs(deltaY)) {
       gestureDistanceRef.current += Math.abs(deltaX);
       const progress = Math.min(100, Math.round(gestureDistanceRef.current / 420 * 100));
       setCutProgress(progress);
-      if (progress === 100) setGameFeedback('Potongan kuih sudah kemas!');
+      if (progress === 100)       setGameFeedback('Wah, potongan kuih kemas! ⭐');
     }
 
     gestureRef.current = { ...gesture, x: event.clientX, y: event.clientY };
@@ -465,14 +490,14 @@ const Learn = () => {
 
   const handleStartHeating = () => {
     if (!areCurrentStepItemsPlaced) {
-      setGameFeedback('Masukkan semua bahan yang diperlukan dahulu.');
+      setGameFeedback('Masukkan bahan dulu, chef kecil!');
       return;
     }
 
     const targetHeat = currentStep.heatLevel || 'medium-low';
     if (selectedHeat !== targetHeat) {
       const heatLabel = HEAT_LEVELS.find((level) => level.id === targetHeat)?.label || 'tahap api yang betul';
-      setGameFeedback(`Pilih ${heatLabel.toLowerCase()} supaya kuih masak sekata.`);
+      setGameFeedback(`Cuba pilih ${heatLabel.toLowerCase()} supaya kuih masak sekata.`);
       return;
     }
     setIsHeating(true);
@@ -502,7 +527,7 @@ const Learn = () => {
         setPlacedIngredients([]);
         setIsCooled(false);
         resetStepActions();
-        setGameFeedback('Bagus! Ikuti langkah seterusnya.');
+        setGameFeedback('Hebat! Langkah ini dah siap. Jom teruskan! ✨');
       } else {
         setGameOver(true);
         setIsProcessing(false);
@@ -686,7 +711,7 @@ const Learn = () => {
 
               {!selectedRecipe ? (
                 <div className="recipe-select">
-                  <p className="recipe-select-intro">Pilih kuih yang ingin dibuat. Seret atau tekan bahan untuk siapkan setiap langkah.</p>
+                  <p className="recipe-select-intro">Pilih kuih, masukkan bahan, kemudian gaul, kukus dan siapkan kuih satu langkah demi satu langkah!</p>
                   {recipeLoadError && <p className="recipe-load-error" role="status">{recipeLoadError}</p>}
                   <div className="recipe-grid">
                     {availableRecipes.map((recipe) => (
@@ -723,17 +748,12 @@ const Learn = () => {
                   <div className="game-step-meta">
                     <span className="step-count">Langkah {currentStepIndex + 1} daripada {gameSteps.length}</span>
                     <span className="game-recipe-tag">{selectedRecipe.name}</span>
+                    <span className="game-stars">{'⭐'.repeat(Math.min(currentStepIndex, 5))} {currentStepIndex} bintang</span>
                   </div>
                   <h3 className="game-title">{currentStep.title}</h3>
                   <p className="game-prompt">{currentStep.instruction}</p>
 
                   <div className={`cooking-scene scene-${currentStep.target} ${isProcessing ? 'processing' : ''}`}>
-                    <div className="scene-shelf" aria-hidden="true">
-                      <span>🫙</span><span>🥄</span><span>🧂</span>
-                    </div>
-                    <div className="scene-utensils" aria-hidden="true">
-                      {currentStep.action === 'cut' ? '🔪　🍰　🥣' : '🥄　🍴　🥣'}
-                    </div>
                     <div
                       className={`cooking-target target-${currentStep.target} ${hasBatter ? 'has-batter' : ''} ${['stir', 'blend', 'press', 'cut'].includes(currentStep.action) && areCurrentStepItemsPlaced ? 'gesture-ready' : ''} ${isStirring ? 'stirring' : ''} ${isPressing ? 'pressing' : ''}`}
                       onDragOver={(event) => event.preventDefault()}
@@ -753,40 +773,126 @@ const Learn = () => {
                               ? 'Seret pisau melintasi kuih untuk memotong'
                               : `Letak bahan di ${currentStep.targetLabel}`}
                     >
-                      {currentStep.target !== 'bowl' && (
-                        <span className="target-emoji" aria-hidden="true">
-                          {currentStep.target === 'tray'
-                            ? '🍱'
-                            : currentStep.target === 'steamer'
-                              ? '♨️'
-                              : '🍰'}
-                        </span>
-                      )}
-                      {hasBatter && (
-                        <div className={`bowl-batter ${isStirring && currentStep.action === 'stir' ? 'mixing' : ''}`} aria-hidden="true" />
-                      )}
-                      {currentStep.action === 'stir' && areCurrentStepItemsPlaced && (
+                      {currentStep.target === 'bowl' ? (
                         <svg
-                          className={`stir-spoon ${isStirring ? 'moving' : ''}`}
-                          style={stirToolPosition ? {
-                            left: `${stirToolPosition.x}px`,
-                            top: `${stirToolPosition.y}px`,
-                            transform: `translate(-10px, -50%) rotate(${stirToolPosition.angle}deg)`
-                          } : undefined}
-                          viewBox="0 0 90 24"
+                          className={`bowl-vessel ${hasBatter ? 'has-batter' : ''}`}
+                          viewBox="0 0 420 230"
                           aria-hidden="true"
                         >
-                          <ellipse cx="11" cy="12" rx="9" ry="6" fill="#d4a557" stroke="#805d2b" strokeWidth="1.5" />
-                          <path d="M18 12H84" stroke="#805d2b" strokeWidth="4" strokeLinecap="round" />
-                          <path d="M20 10.5H82" stroke="#f3d996" strokeWidth="1" strokeLinecap="round" />
+                          <defs>
+                            <linearGradient id="bowl-body" x1="0" y1="0" x2="1" y2="1">
+                              <stop offset="0%" stopColor="#f3f5e9" />
+                              <stop offset="18%" stopColor="#dce4d0" />
+                              <stop offset="40%" stopColor="#8fae73" />
+                              <stop offset="72%" stopColor="#5d8248" />
+                              <stop offset="100%" stopColor="#3e6338" />
+                            </linearGradient>
+                            <linearGradient id="bowl-rim" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#fffef8" />
+                              <stop offset="35%" stopColor="#dce7d1" />
+                              <stop offset="68%" stopColor="#769859" />
+                              <stop offset="100%" stopColor="#365a34" />
+                            </linearGradient>
+                            <linearGradient id="batter-surface" x1="0" y1="0" x2="0.8" y2="1">
+                              <stop offset="0%" stopColor={batterPalette.light} />
+                              <stop offset="58%" stopColor={batterPalette.mid} />
+                              <stop offset="100%" stopColor={batterPalette.dark} />
+                            </linearGradient>
+                            <radialGradient id="bowl-gloss" cx="30%" cy="20%" r="80%">
+                              <stop offset="0%" stopColor="#fff" stopOpacity=".72" />
+                              <stop offset="45%" stopColor="#fff" stopOpacity=".12" />
+                              <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+                            </radialGradient>
+                            <clipPath id="batter-clip">
+                              <ellipse cx="210" cy="61" rx="143" ry="27" />
+                            </clipPath>
+                          </defs>
+
+                          <ellipse cx="210" cy="210" rx="153" ry="12" fill="#243d24" opacity=".22" />
+                          <path
+                            d="M45 58 C49 112 69 168 111 188 C153 208 267 208 309 188 C351 168 371 112 375 58 Z"
+                            fill="url(#bowl-body)"
+                            stroke="#f8f8ed"
+                            strokeWidth="5"
+                          />
+                          <path
+                            d="M76 85 C78 127 92 163 119 177"
+                            fill="none"
+                            stroke="url(#bowl-gloss)"
+                            strokeWidth="16"
+                            strokeLinecap="round"
+                            opacity=".8"
+                          />
+                          <path
+                            d="M344 86 C341 130 325 163 300 177"
+                            fill="none"
+                            stroke="#29482e"
+                            strokeWidth="10"
+                            strokeLinecap="round"
+                            opacity=".18"
+                          />
+                          <ellipse cx="210" cy="58" rx="168" ry="45" fill="url(#bowl-rim)" stroke="#fffef8" strokeWidth="5" />
+                          <ellipse cx="210" cy="59" rx="151" ry="34" fill="#557a45" stroke="#dbe5cd" strokeWidth="3" />
+                          <ellipse cx="210" cy="57" rx="144" ry="28" fill="#708e4e" opacity={hasBatter ? 0 : 1} />
+
+                          {showUnmixedIngredients && (
+                            <g className="unmixed-ingredients">
+                              <ellipse cx="210" cy="61" rx="112" ry="19" fill="#e9e2ce" />
+                              <ellipse cx="169" cy="57" rx="46" ry="10" fill="#fbf8ec" />
+                              <ellipse cx="248" cy="64" rx="39" ry="9" fill="#f3eddd" />
+                              <circle cx="127" cy="61" r="2" fill="#d0be96" />
+                              <circle cx="278" cy="56" r="2.5" fill="#d0be96" />
+                              <circle cx="223" cy="69" r="1.8" fill="#d0be96" />
+                            </g>
+                          )}
+
+                          {hasBatter && (
+                            <>
+                              <ellipse cx="210" cy="60" rx="143" ry="27" fill="url(#batter-surface)" stroke={batterPalette.highlight} strokeWidth="2" />
+                              <g
+                                className={`batter-ripples ${isStirring && currentStep.action === 'stir' ? 'active' : ''}`}
+                                clipPath="url(#batter-clip)"
+                                fill="none"
+                                stroke={batterPalette.highlight}
+                                strokeLinecap="round"
+                              >
+                                <path d="M72 59 C115 32 148 79 188 54 S264 35 345 61" strokeWidth="4" strokeDasharray="18 13" opacity=".76" />
+                                <path d="M86 68 C129 45 158 85 207 64 S282 48 330 69" strokeWidth="2" strokeDasharray="11 10" opacity=".52" />
+                                <path d="M116 46 C153 68 174 38 216 50 S275 72 311 47" strokeWidth="2" strokeDasharray="12 11" opacity=".38" />
+                              </g>
+                              <ellipse cx="166" cy="50" rx="18" ry="4" fill="#fff" opacity=".23" />
+                              <ellipse cx="285" cy="68" rx="12" ry="3" fill="#fff" opacity=".2" />
+                            </>
+                          )}
+
+                          {currentStep.action === 'stir' && areCurrentStepItemsPlaced && (
+                            <g
+                              transform={`translate(${stirToolPosition?.x ?? 210} ${stirToolPosition?.y ?? 59}) rotate(${stirToolPosition?.angle ?? -35})`}
+                            >
+                              <g className={`spoon-motion ${isStirring ? 'active' : ''}`}>
+                                <ellipse cx="1" cy="3" rx="13" ry="8" fill="#263323" opacity=".25" />
+                                <ellipse cx="0" cy="0" rx="12" ry="7" fill="#d2a65c" stroke="#76572e" strokeWidth="2" />
+                                <ellipse cx="-2" cy="-1" rx="7" ry="3.5" fill="#f3d996" opacity=".86" />
+                                <path d="M10 0 L99 0" fill="none" stroke="#76572e" strokeWidth="8" strokeLinecap="round" />
+                                <path d="M14 -2 L95 -2" fill="none" stroke="#eed28d" strokeWidth="2" strokeLinecap="round" />
+                                <path d="M70 -2 L93 -2" fill="none" stroke="#fff1bc" strokeWidth="1" strokeLinecap="round" />
+                              </g>
+                            </g>
+                          )}
                         </svg>
+                      ) : (
+                        <span className="target-emoji" aria-hidden="true">
+                          {currentStep.target === 'tray' ? '🍱' : currentStep.target === 'steamer' ? '♨️' : '🍰'}
+                        </span>
                       )}
-                      <div className="target-contents" aria-live="polite">
+                      {currentStep.target !== 'bowl' && (
+                        <div className="target-contents" aria-live="polite">
                         {placedIngredients.map((id) => {
                           const item = currentStep.items.find((ingredient) => ingredient.id === id);
                           return item && <span key={id} title={item.name}>{item.emoji}</span>;
                         })}
-                      </div>
+                        </div>
+                      )}
                       <span className="target-label">{currentStep.targetLabel}</span>
                     </div>
                     {isProcessing && <span className="scene-action" aria-live="polite">✨</span>}
@@ -900,7 +1006,10 @@ const Learn = () => {
                     <div className="steam-tip">Api sederhana kecil membantu menghasilkan permukaan kuih yang licin.</div>
                   )}
 
-                  <p className="game-feedback" aria-live="polite">{gameFeedback}</p>
+                  <div className={`game-cheer ${isStirring ? 'encouraging' : ''}`}>
+                    <span className="game-cheer-mascot" aria-hidden="true">🧑‍🍳</span>
+                    <p className="game-feedback" aria-live="polite">{gameFeedback}</p>
+                  </div>
 
                   <button
                     className="next-step-btn"
@@ -925,9 +1034,9 @@ const Learn = () => {
                       <span key={`${layer}-${index}`} className={`finished-layer layer-${layer}`} />
                     ))}
                   </div>
-                  <h3>{selectedRecipe.name} Siap!</h3>
+                  <h3>Wah, {selectedRecipe.name} dah siap! 🎉</h3>
                   <p className="result-msg">
-                    Hebat! Anda sudah menyelesaikan semua langkah untuk {selectedRecipe.name}.
+                    Hebat, chef kecil! Anda berjaya siapkan semua langkah. Pilih saiz kuih untuk tempahan.
                   </p>
 
                   <div className="finished-size-select">
