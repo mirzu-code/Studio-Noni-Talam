@@ -1,57 +1,68 @@
 import React, { useState } from 'react';
 import './Learn.css';
 
-// Interactive Mini Game: Master the Kuih Talam Sequence
+// Step-by-step kuih talam cooking game
 const GAME_STEPS = [
   {
-    step: 1,
-    title: 'Langkah 1: Penyediaan Daun Pandan & Santan',
-    prompt: 'Apakah bahan pertama yang perlu dikisar bersama air untuk aroma & warna hijau talam?',
-    options: [
-      { id: 'a', text: 'Daun Pandan Asli & Air', correct: true, hint: 'Tepat sekali! Daun pandan segar memberikan aroma dan warna hijau semulajadi.' },
-      { id: 'b', text: 'Pewarna Tiruan Hijau & Cuka', correct: false, hint: 'Kurang tepat. Noni Talam menggunakan 100% daun pandan asli.' },
-      { id: 'c', text: 'Sirap Ros Merah', correct: false, hint: 'Salah, itu untuk sirap bandung!' }
-    ]
+    title: 'Kisar daun pandan',
+    instruction: 'Masukkan daun pandan dan air ke dalam pengisar untuk menyediakan jus pandan asli.',
+    target: 'bowl',
+    targetLabel: 'Mangkuk pengisar',
+    items: [
+      { id: 'pandan', name: 'Daun pandan', emoji: '🌿' },
+      { id: 'water', name: 'Air', emoji: '💧' }
+    ],
+    action: 'Kisar jus pandan'
   },
   {
-    step: 2,
-    title: 'Langkah 2: Lapisan Bawah (Tapak Pulut)',
-    prompt: 'Sebelum mengukus pulut lapisan bawah, apakah cecair yang perlu digaul bersama beras pulut?',
-    options: [
-      { id: 'a', text: 'Susu Pekat Manis', correct: false, hint: 'Pulut akan jadi terlalu manis dan cepat hangit.' },
-      { id: 'b', text: 'Santan Pekat Bersama Secubit Garam', correct: true, hint: 'Bagus! Santan pekat bergaram menjadikan pulut lemak dan gurih.' },
-      { id: 'c', text: 'Air Kosong Sejuk', correct: false, hint: 'Pulut perlukan lemak santan untuk melekat dan berkilat.' }
-    ]
+    title: 'Sediakan lapisan pulut',
+    instruction: 'Gaulkan pulut dengan santan pekat dan secubit garam sebelum dikukus separuh masak.',
+    target: 'bowl',
+    targetLabel: 'Mangkuk adunan',
+    items: [
+      { id: 'glutinous-rice', name: 'Beras pulut', emoji: '🍚' },
+      { id: 'coconut-milk', name: 'Santan + garam', emoji: '🥥' }
+    ],
+    action: 'Gaul dan kukus pulut'
   },
   {
-    step: 3,
-    title: 'Langkah 3: Pemadatan Tapak Pulut',
-    prompt: 'Setelah pulut masak separuh kukus, apakah tindakan penting sebelum tuang adunan hijau?',
-    options: [
-      { id: 'a', text: 'Tekan dan padatkan pulut di dalam loyang hingga rapat', correct: true, hint: 'Hebat! Ini mengelakkan lapisan hijau daripada meresap ke dasar loyang.' },
-      { id: 'b', text: 'Biarkan pulut berderai longgar', correct: false, hint: 'Jika longgar, lapisan hijau akan meresap dan merosakkan garisan dua tona.' },
-      { id: 'c', text: 'Tabur serbuk coklat', correct: false, hint: 'Ini kuih talam tradisional, bukan kek coklat!' }
-    ]
+    title: 'Padatkan tapak pulut',
+    instruction: 'Pindahkan pulut separuh masak ke dalam loyang dan tekan hingga padat.',
+    target: 'tray',
+    targetLabel: 'Loyang',
+    items: [
+      { id: 'spatula', name: 'Pulut separuh masak', emoji: '🍚' }
+    ],
+    action: 'Tekan dan padatkan'
   },
   {
-    step: 4,
-    title: 'Langkah 4: Adunan Kastard Hijau Pandan',
-    prompt: 'Berapa suhu api pengukus yang disarankan untuk mendapatkan permukaan talam yang licin tanpa gelembung?',
-    options: [
-      { id: 'a', text: 'Api sederhana kecil & lap penutup kukusan berkala', correct: true, hint: 'Sempurna! Api sederhana kecil mengelakkan gelembung udara pada permukaan kuih.' },
-      { id: 'b', text: 'Api paling besar membara sepanjang masa', correct: false, hint: 'Api terlalu besar membuatkan adunan mendidih berkawah dan berlubang-lubang.' },
-      { id: 'c', text: 'Matikan api terus', correct: false, hint: 'Kuih tidak akan masak!' }
-    ]
+    title: 'Tambah lapisan pandan',
+    instruction: 'Tuangkan adunan kastard pandan di atas tapak pulut yang telah dipadatkan.',
+    target: 'tray',
+    targetLabel: 'Loyang kuih',
+    items: [
+      { id: 'pandan-custard', name: 'Adunan pandan', emoji: '🥣' }
+    ],
+    action: 'Tuang adunan pandan'
   },
   {
-    step: 5,
-    title: 'Langkah 5: Masa Menyejuk & Memotong',
-    prompt: 'Bilakah masa terbaik untuk memotong kuih talam supaya potongannya tajam dan kemas?',
-    options: [
-      { id: 'a', text: 'Semasa panas berasap sejurus keluar kukusan', correct: false, hint: 'Kuih masih lembik dan akan hancur lekat pada pisau!' },
-      { id: 'b', text: 'Setelah kuih sejuk sepenuhnya ke suhu bilik (3-4 jam) dengan pisau plastik/disapu minyak', correct: true, hint: 'Syabas! Potongan kemas bak cermin bila kuih sudah sejuk sepenuhnya.' },
-      { id: 'c', text: 'Simpan beku dalam freezer semalaman', correct: false, hint: 'Santan akan pecah minyak dan tekstur menjadi berair bila cair.' }
-    ]
+    title: 'Kukus hingga masak',
+    instruction: 'Kukus dengan api sederhana kecil dan lap penutup kukusan berkala supaya permukaan kuih kekal licin.',
+    target: 'steamer',
+    targetLabel: 'Pengukus',
+    items: [],
+    action: 'Kukus kuih'
+  },
+  {
+    title: 'Sejukkan dan potong',
+    instruction: 'Sejukkan kuih sepenuhnya pada suhu bilik (3–4 jam), kemudian gunakan pisau plastik atau pisau yang disapu minyak.',
+    target: 'cake',
+    targetLabel: 'Kuih talam',
+    items: [
+      { id: 'knife', name: 'Pisau plastik', emoji: '🔪' }
+    ],
+    action: 'Potong kuih talam',
+    needsCooling: true
   }
 ];
 
@@ -60,24 +71,30 @@ const Learn = () => {
 
   // Game state
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [score, setScore] = useState(0);
+  const [placedIngredients, setPlacedIngredients] = useState([]);
+  const [isCooled, setIsCooled] = useState(false);
   const [gameOver, setGameOver] = useState(false);
 
-  const currentQ = GAME_STEPS[currentStepIndex];
+  const currentStep = GAME_STEPS[currentStepIndex];
 
-  const handleSelectOption = (opt) => {
-    if (selectedAnswer !== null) return; // Prevent changing after select
-    setSelectedAnswer(opt);
-    if (opt.correct) {
-      setScore(prev => prev + 1);
-    }
+  const handleIngredientDrop = (ingredientId) => {
+    if (!currentStep.items.some((item) => item.id === ingredientId)) return;
+    setPlacedIngredients((items) => items.includes(ingredientId) ? items : [...items, ingredientId]);
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    handleIngredientDrop(event.dataTransfer.getData('text/plain'));
   };
 
   const handleNextStep = () => {
-    setSelectedAnswer(null);
+    const allItemsPlaced = currentStep.items.every((item) => placedIngredients.includes(item.id));
+    if (!allItemsPlaced || (currentStep.needsCooling && !isCooled)) return;
+
     if (currentStepIndex + 1 < GAME_STEPS.length) {
-      setCurrentStepIndex(prev => prev + 1);
+      setCurrentStepIndex((step) => step + 1);
+      setPlacedIngredients([]);
+      setIsCooled(false);
     } else {
       setGameOver(true);
     }
@@ -85,8 +102,8 @@ const Learn = () => {
 
   const handleRestartGame = () => {
     setCurrentStepIndex(0);
-    setSelectedAnswer(null);
-    setScore(0);
+    setPlacedIngredients([]);
+    setIsCooled(false);
     setGameOver(false);
   };
 
@@ -149,7 +166,7 @@ const Learn = () => {
         <div className="learn-hero-badge">🎓 Akademi Maya Noni Talam</div>
         <h1>Belajar Membuat Kuih Talam</h1>
         <p>
-          Tonton video tutorial interaktif di YouTube atau uji pengetahuan anda melalui Mini Game cabaran membuat kuih talam bertahap!
+          Tonton tutorial, cuba game membuat kuih talam langkah demi langkah, atau terokai modul pembelajaran kami.
         </p>
 
         {/* Tab switchers */}
@@ -164,7 +181,7 @@ const Learn = () => {
             className={`learn-tab-btn ${activeTab === 'game' ? 'active' : ''}`}
             onClick={() => setActiveTab('game')}
           >
-            🎮 Mini Game: Cabaran Kuih Talam
+            🎮 Game Buat Kuih Talam
           </button>
           <button 
             className={`learn-tab-btn ${activeTab === 'modules' ? 'active' : ''}`}
@@ -234,17 +251,14 @@ const Learn = () => {
           </div>
         )}
 
-        {/* TAB 2: MINI GAME */}
+        {/* TAB 2: COOKING GAME */}
         {activeTab === 'game' && (
           <div className="game-section">
             <div className="game-card">
               <div className="game-header">
                 <div>
-                  <span className="game-badge">🎮 Mini Game Interaktif</span>
-                  <h2>Cabaran Master Kuih Talam</h2>
-                </div>
-                <div className="game-score-pill">
-                  Markah: <strong>{score}</strong> / {GAME_STEPS.length}
+                  <span className="game-badge">🎮 Dapur Interaktif</span>
+                  <h2>Jom Buat Kuih Talam!</h2>
                 </div>
               </div>
 
@@ -257,60 +271,97 @@ const Learn = () => {
                     />
                   </div>
                   <div className="step-count">Langkah {currentStepIndex + 1} daripada {GAME_STEPS.length}</div>
-                  <h3 className="game-title">{currentQ.title}</h3>
-                  <p className="game-prompt">{currentQ.prompt}</p>
+                  <h3 className="game-title">{currentStep.title}</h3>
+                  <p className="game-prompt">{currentStep.instruction}</p>
 
-                  <div className="game-options">
-                    {currentQ.options.map((opt) => {
-                      let btnClass = 'game-opt-btn';
-                      if (selectedAnswer) {
-                        if (opt.correct) btnClass += ' correct';
-                        else if (selectedAnswer.id === opt.id && !opt.correct) btnClass += ' wrong';
-                      }
-                      return (
-                        <button
-                          key={opt.id}
-                          className={btnClass}
-                          onClick={() => handleSelectOption(opt)}
-                          disabled={selectedAnswer !== null}
-                        >
-                          <span className="opt-letter">{opt.id.toUpperCase()}</span>
-                          <span className="opt-text">{opt.text}</span>
-                        </button>
-                      );
-                    })}
+                  <div className={`cooking-scene scene-${currentStep.target}`}>
+                    <div className="scene-shelf" aria-hidden="true">
+                      <span>🫙</span><span>🥄</span><span>🧂</span>
+                    </div>
+                    <div className="scene-utensils" aria-hidden="true">🥄　🍴　🥣</div>
+                    <div
+                      className={`cooking-target target-${currentStep.target}`}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={handleDrop}
+                      role="region"
+                      aria-label={`Letak bahan di ${currentStep.targetLabel}`}
+                    >
+                      <span className="target-emoji" aria-hidden="true">
+                        {currentStep.target === 'bowl' ? '🥣' : currentStep.target === 'tray' ? '🍱' : currentStep.target === 'steamer' ? '♨️' : '🍰'}
+                      </span>
+                      <div className="target-contents" aria-live="polite">
+                        {placedIngredients.map((id) => {
+                          const item = currentStep.items.find((ingredient) => ingredient.id === id);
+                          return item && <span key={id} title={item.name}>{item.emoji}</span>;
+                        })}
+                      </div>
+                      <span className="target-label">{currentStep.targetLabel}</span>
+                    </div>
                   </div>
 
-                  {selectedAnswer && (
-                    <div className={`answer-feedback ${selectedAnswer.correct ? 'success' : 'alert'}`}>
-                      <strong>{selectedAnswer.correct ? '🎉 Tahniah!' : '⚠️ Perhatian:'}</strong> {selectedAnswer.hint}
-                      <div style={{ marginTop: '1rem', textAlign: 'right' }}>
-                        <button className="next-step-btn" onClick={handleNextStep}>
-                          {currentStepIndex + 1 < GAME_STEPS.length ? 'Langkah Seterusnya ➔' : 'Lihat Keputusan 🏆'}
-                        </button>
-                      </div>
-                    </div>
+                  {currentStep.needsCooling && !isCooled && (
+                    <button className="cooling-btn" type="button" onClick={() => setIsCooled(true)}>
+                      ❄️ Kuih sudah sejuk sepenuhnya
+                    </button>
                   )}
+
+                  {currentStep.items.length > 0 ? (
+                    <div className="ingredient-picker" aria-label="Bahan dan peralatan">
+                      {currentStep.items.map((item) => {
+                        const isPlaced = placedIngredients.includes(item.id);
+                        return (
+                          <button
+                            key={item.id}
+                            className={`ingredient-card ${isPlaced ? 'placed' : ''}`}
+                            type="button"
+                            draggable={!isPlaced && (!currentStep.needsCooling || isCooled)}
+                            disabled={isPlaced || (currentStep.needsCooling && !isCooled)}
+                            onClick={() => handleIngredientDrop(item.id)}
+                            onDragStart={(event) => event.dataTransfer.setData('text/plain', item.id)}
+                            aria-pressed={isPlaced}
+                          >
+                            <span className="ingredient-emoji" aria-hidden="true">{item.emoji}</span>
+                            <span>{isPlaced ? 'Dimasukkan!' : item.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="steam-tip">Api sederhana kecil membantu menghasilkan permukaan kuih yang licin.</div>
+                  )}
+
+                  <p className="game-interaction-hint">
+                    {currentStep.items.length > 0
+                      ? 'Seret bahan ke dalam bekas atau tekan bahannya.'
+                      : 'Ikuti arahan dan mulakan proses mengukus.'}
+                  </p>
+
+                  <button
+                    className="next-step-btn"
+                    type="button"
+                    onClick={handleNextStep}
+                    disabled={
+                      !currentStep.items.every((item) => placedIngredients.includes(item.id)) ||
+                      (currentStep.needsCooling && !isCooled)
+                    }
+                  >
+                    {currentStep.action} ➜
+                  </button>
                 </div>
               ) : (
                 <div className="game-result">
-                  <div className="result-trophy">
-                    {score >= 4 ? '🏆' : score >= 2 ? '⭐' : '💪'}
+                  <div className="finished-kuih" aria-hidden="true">
+                    <span />
+                    <span />
+                    <span />
                   </div>
-                  <h3>Permainan Selesai!</h3>
-                  <p className="result-score-text">
-                    Anda mendapat <strong>{score}</strong> daripada <strong>{GAME_STEPS.length}</strong> markah betul!
-                  </p>
+                  <h3>Kuih Talam Siap!</h3>
                   <p className="result-msg">
-                    {score === 5 
-                      ? 'Hebat sekali! Anda layak bergelar Master Kuih Talam Noni! Sertai kelas studio fizikal kami untuk asah kemahiran praktikal.'
-                      : score >= 3
-                      ? 'Bagus! Anda sudah faham asas penting kuih talam. Teruskan belajar dengan menonton video tutorial.'
-                      : 'Jangan putus asa! Cuba tonton video tutorial di tab YouTube dahulu dan mainkan semula kuiz ini!'}
+                    Hebat! Anda sudah menyediakan jus pandan, membina lapisan pulut dan pandan, mengukus, menyejukkan, serta memotong kuih talam.
                   </p>
 
                   <div className="game-result-actions">
-                    <button className="restart-btn" onClick={handleRestartGame}>
+                    <button className="restart-btn" type="button" onClick={handleRestartGame}>
                       🔄 Main Semula
                     </button>
                     <a href="/" className="book-studio-btn">

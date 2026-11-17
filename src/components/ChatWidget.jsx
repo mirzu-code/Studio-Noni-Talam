@@ -20,7 +20,7 @@ const quickQuestions = {
     'How do I contact you?'
   ],
   '/learn': [
-    'What can I learn on this page?',
+    'How does the kuih-making game work?',
     'Are there kuih talam tutorials?',
     'How do I book a studio class?'
   ],
@@ -33,19 +33,19 @@ const quickQuestions = {
 
 const answers = [
   {
-    keywords: ['class price', 'package price', 'studio price', 'how much', 'harga kelas', 'harga pakej'],
+    keywords: ['class price', 'package price', 'studio price', 'harga kelas', 'harga pakej'],
     text: 'Studio packages on the website are RM100 for 1 person, RM180 for 2, RM250 for 3, and RM300 for 4 people.'
-  },
-  {
-    keywords: ['book', 'booking', 'class', 'studio', 'session', 'tempah kelas'],
-    text: 'Choose a studio package, date, and time on the Studio page, then enter your details to continue to checkout. Classes are available Monday to Saturday.'
   },
   {
     keywords: ['schedule', 'time', 'slot', 'available day', 'day', 'open', 'weekend', 'hari', 'waktu', 'jadual'],
     text: 'The Studio page lists sessions Monday to Saturday at 10:00 AM, 11:00 AM, 2:00 PM, 4:00 PM, and 6:00 PM. Availability depends on the date and remaining places shown on the booking form.'
   },
   {
-    keywords: ['capacity', 'full', 'spots', 'per slot', 'remaining places', 'people per', 'orang', 'penuh'],
+    keywords: ['book', 'booking', 'class', 'studio', 'session', 'tempah kelas'],
+    text: 'Choose a studio package, date, and time on the Studio page, then enter your details to continue to checkout. Classes are available Monday to Saturday.'
+  },
+  {
+    keywords: ['capacity', 'full', 'spots', 'per slot', 'remaining places', 'people per', 'how many people', 'orang', 'penuh'],
     text: 'The Studio page allows up to 6 people per time slot and shows remaining places after you choose a date.'
   },
   {
@@ -53,16 +53,16 @@ const answers = [
     text: 'The kuih ordering page offers 8×8, 9×9, and 10×10 sizes for kuih with size options. The page shows the current price for each kuih and size.'
   },
   {
-    keywords: ['order', 'buy', 'delivery', 'pickup', 'pick up', 'kuih', 'menu', 'product', 'produk', 'beli'],
-    text: 'You can browse kuih and place an order on the Order Kuih page. The Products page also lists kuih talam, premix, baking equipment, and gift boxes. Delivery details and prices are shown on the order page.'
-  },
-  {
     keywords: ['pay', 'payment', 'receipt', 'checkout', 'bayar', 'pembayaran'],
     text: 'Continue from your booking or kuih order to the website checkout for payment instructions. For studio bookings, the checkout page asks you to send your receipt through WhatsApp.'
   },
   {
     keywords: ['learn', 'tutorial', 'recipe', 'game', 'belajar', 'video', 'kelas memasak'],
-    text: 'The Learn page has kuih talam tutorial links, learning notes, and an interactive mini game about making kuih talam.'
+    text: 'The Learn page has tutorials, learning notes, and an interactive six-step kuih talam cooking game. Add or drag ingredients through pandan preparation, the pulut base, steaming, cooling, and cutting until your kuih is ready.'
+  },
+  {
+    keywords: ['order', 'buy', 'delivery', 'pickup', 'pick up', 'kuih', 'menu', 'product', 'produk', 'beli'],
+    text: 'You can browse kuih and place an order on the Order Kuih page. The Products page also lists kuih talam, premix, baking equipment, and gift boxes. Delivery details and prices are shown on the order page.'
   },
   {
     keywords: ['contact', 'whatsapp', 'phone', 'number', 'hubungi', 'telefon'],
@@ -83,9 +83,7 @@ const ChatWidget = () => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([
-    { type: 'bot', text: 'Hi! Good to see you. Ask me about our studio classes, kuih, or products.' }
-  ]);
+  const [messages, setMessages] = useState([]);
   const messagesEndRef = useRef(null);
   const questions = quickQuestions[location.pathname] || quickQuestions['/'];
 
@@ -149,11 +147,11 @@ const ChatWidget = () => {
           </header>
 
           <div className="chat-messages" aria-live="polite">
-            {messages.length === 1 && (
+            {messages.length === 0 && (
               <div className="chat-welcome">
                 <span className="welcome-sparkle" aria-hidden="true">✦</span>
                 <h3>Good to see you.</h3>
-                <p>What would you like to know about Studio Noni Talam?</p>
+                <p>Ask me about our studio classes, kuih, or products.</p>
               </div>
             )}
             {messages.map((item, index) => (
@@ -165,7 +163,7 @@ const ChatWidget = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {messages.length === 1 && (
+          {messages.length === 0 && (
             <div className="quick-questions" aria-label="Suggested questions">
               {questions.map((question) => (
                 <button
